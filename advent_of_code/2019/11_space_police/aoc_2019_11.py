@@ -1,4 +1,4 @@
-''' Advent of code 2019 Day 11 - Space police '''
+''' Advent of code 2019 Day 11 - Space police  '''
 
 from typing import NamedTuple
 from enum import Enum

@@ -51,24 +51,66 @@ while True:
             super_pellets.append((x, y))
         else:
             normal_pellets.append((x,y))
-    
+
+ 
+    # Phase 1 - Super pellets
+    # # min_distances = [math.inf] * len(pacs_mine)
+    if len(super_pellets) > 0:
+
+        targets = super_pellets
+        # Make sure each pellet is assigned to a pac if available.
+        pac_targets = [None] * len(pacs_mine)
+        for target in targets:
+            min_distance = math.inf
+            for p, pac in enumerate(pacs_mine):
+                if pac_targets[p] is None:
+                    distance = manhattan(pac, target)
+                    if distance < min_distance:
+                        min_distance = distance
+                        assigned_pac = p
+            pac_targets[assigned_pac] = target
+
+        # If we still have available pacs, we assign each of them the closest super pallet.
+        for p, pac in enumerate(pacs_mine):
+            if pac_targets[p] is None:
+                min_distance = math.inf
+                closest_target = None
+                for target in targets:
+                    distance = manhattan(pac, target)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_target = target
+                pac_targets[p] = closest_target
+
+    # Phase 2 - Normal pellets
+    else:
+        targets = normal_pellets
+
+        pac_targets = [None] * len(pacs_mine)
+        for p, pac in enumerate(pacs_mine):
+            if pac_targets[p] is None:
+                min_distance = math.inf
+                closest_target = None
+                for target in targets:
+                    distance = manhattan(pac, target)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_target = target
+
+   
+
+    # Command generation
     moves = []
     speeds = []
-    for p, pac in enumerate(pacs_mine):
-        if len(super_pellets) > 0:
-            targets = super_pellets
-        else:
-            targets = normal_pellets
-
-        min_distance = math.inf
-        for i, target in enumerate(targets):
-            distance = manhattan(pac, target)
-            if distance <= min_distance:
-                min_distance = distance
-                index = i
-        moves.append(f"MOVE {p} {targets[index][0]} {targets[index][1]}")        
-        speeds.append(f"SPEED {p}")
+    print(pac_targets, file=sys.stderr)
+    for p, pac_target in enumerate(pac_targets):
+        moves.append(f"MOVE {p} {pac_target[0]} {pac_target[1]}")
     
+    for p, pac in enumerate(pacs_mine):
+        speeds.append(f"SPEED {p}")
+
+
+    # Turn handler
     if turn % 10 == 0:
         print("|".join(speeds))
     else:

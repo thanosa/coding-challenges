@@ -51,21 +51,22 @@ while True:
         else:
             normal_pellets.append((x,y))
     
-    for pac in pacs_mine:
+    moves = []
+    for p, pac in enumerate(pacs_mine):
         if len(super_pellets) > 0:
-            target = super_pellets
+            targets = super_pellets
         else:
-            target = normal_pellets
+            targets = normal_pellets
 
         min_distance = math.inf
-        for i, super_pellet in enumerate(target):
-            distance = manhattan(pac, super_pellet)
+        for i, target in enumerate(targets):
+            distance = manhattan(pac, target)
             if distance <= min_distance:
                 min_distance = distance
                 index = i
-
-        print(f"MOVE 0 {target[index][0]} {target[index][1]}")
-
-
-    # MOVE <pacId> <x> <y>
+        moves.append(f"MOVE {p} {targets[index][0]} {targets[index][1]}")
+        
+    
+    
+    print("|".join(moves))
 

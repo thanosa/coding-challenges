@@ -106,3 +106,4 @@ venv.bak/
 /logic_games/
 /.idea
 *.json
+/codingame/competitions/02_pacman/~$pacman.xlsx

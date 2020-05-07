@@ -13,6 +13,7 @@ for i in range(height):
 
 
 # game loop
+turn = 0
 while True:
     pacs_mine = []
     pacs_their = []
@@ -52,6 +53,7 @@ while True:
             normal_pellets.append((x,y))
     
     moves = []
+    speeds = []
     for p, pac in enumerate(pacs_mine):
         if len(super_pellets) > 0:
             targets = super_pellets
@@ -64,9 +66,13 @@ while True:
             if distance <= min_distance:
                 min_distance = distance
                 index = i
-        moves.append(f"MOVE {p} {targets[index][0]} {targets[index][1]}")
-        
+        moves.append(f"MOVE {p} {targets[index][0]} {targets[index][1]}")        
+        speeds.append(f"SPEED {p}")
     
+    if turn % 10 == 0:
+        print("|".join(speeds))
+    else:
+        print("|".join(moves))
     
-    print("|".join(moves))
+    turn += 1
 

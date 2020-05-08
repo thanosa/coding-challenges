@@ -4,8 +4,10 @@ import math
 
 def calc_distance(p1, p2, map_width):
     # Manhattan
-    direct = abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
-    indirect = map_width - direct + 1
+    x_distance = abs(p1[0] - p2[0])
+    y_distance = abs(p1[1] - p2[1])
+    direct = x_distance + y_distance
+    indirect = map_width - x_distance + y_distance + 1
     return min(direct, indirect)
 
 # width: size of the grid

@@ -2,8 +2,11 @@ import sys
 import math
 
 
-def manhattan(p1, p2):
-    return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+def calc_distance(p1, p2, map_width):
+    # Manhattan
+    direct = abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+    indirect = map_width - direct + 1
+    return min(direct, indirect)
 
 # width: size of the grid
 # height: top left corner is (x=0, y=0)
@@ -64,7 +67,7 @@ while True:
             min_distance = math.inf
             for p, pac in enumerate(pacs_mine):
                 if pac_targets[p] is None:
-                    distance = manhattan(pac, target)
+                    distance = calc_distance(pac, target, width)
                     if distance < min_distance:
                         min_distance = distance
                         assigned_pac = p
@@ -76,7 +79,7 @@ while True:
                 min_distance = math.inf
                 closest_target = None
                 for target in targets:
-                    distance = manhattan(pac, target)
+                    distance = calc_distance(pac, target, width)
                     if distance < min_distance:
                         min_distance = distance
                         closest_target = target
@@ -92,7 +95,7 @@ while True:
                 min_distance = math.inf
                 closest_target = None
                 for target in targets:
-                    distance = manhattan(pac, target)
+                    distance = calc_distance(pac, target, width)
                     if distance < min_distance:
                         min_distance = distance
                         closest_target = target

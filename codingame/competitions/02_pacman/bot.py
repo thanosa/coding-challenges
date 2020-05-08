@@ -2,13 +2,25 @@ import sys
 import math
 
 
-def calc_distance(p1, p2, map_width):
+def calc_distance(p1, p2):
     # Manhattan
     x_distance = abs(p1[0] - p2[0])
     y_distance = abs(p1[1] - p2[1])
     direct = x_distance + y_distance
-    indirect = map_width - x_distance + y_distance + 1
+    indirect = width - x_distance + y_distance + 1
     return min(direct, indirect)
+
+
+def calc_distances(pacs, targets):
+    all_distances = []
+    for pac in pacs_mine:
+        targets_distances = []
+        for target in targets:
+            distance = calc_distance(pac["position"], target)
+            targets_distances.append({target: distance})
+        all_distances.append({"pac_id": pac["id"], "distances": targets_distances})
+    return all_distances
+
 
 # width: size of the grid
 # height: top left corner is (x=0, y=0)
@@ -34,16 +46,20 @@ while True:
         # speed_turns_left: unused in wood leagues
         # ability_cooldown: unused in wood leagues
         pac_id, mine, x, y, type_id, speed_turns_left, ability_cooldown = input().split()
-        pac_id = int(pac_id)
-        point = (int(x), int(y))
+ 
+        new_pac = {
+            "id": pac_id,
+            "position": (int(x), int(y)),
+            "type_id": type_id,
+            "speed_turns_left": int(speed_turns_left),
+            "ability_cooldown": int(ability_cooldown)
+        }
 
         if mine == "1":
-            pacs_mine.append(point)
+            pacs_mine.append(new_pac)
         else:
-            pacs_their.append(point)
+            pacs_their.append(new_pac)
 
-        speed_turns_left = int(speed_turns_left)
-        ability_cooldown = int(ability_cooldown)
     visible_pellet_count = int(input())  # all pellets in sight
     
     super_pellets = []
@@ -55,52 +71,21 @@ while True:
         if value == 10:
             super_pellets.append((x, y))
         else:
-            normal_pellets.append((x,y))
+            normal_pellets.append((x, y))
 
  
     # Phase 1 - Super pellets
-    # # min_distances = [math.inf] * len(pacs_mine)
     if len(super_pellets) > 0:
 
-        targets = super_pellets
-        # Make sure each pellet is assigned to a pac if available.
-        pac_targets = [None] * len(pacs_mine)
-        for target in targets:
-            min_distance = math.inf
-            for p, pac in enumerate(pacs_mine):
-                if pac_targets[p] is None:
-                    distance = calc_distance(pac, target, width)
-                    if distance < min_distance:
-                        min_distance = distance
-                        assigned_pac = p
-            pac_targets[assigned_pac] = target
+        # Calculate the distance matrix
+        distances = calc_distances(pacs_mine, super_pellets)
 
-        # If we still have available pacs, we assign each of them the closest super pallet.
-        for p, pac in enumerate(pacs_mine):
-            if pac_targets[p] is None:
-                min_distance = math.inf
-                closest_target = None
-                for target in targets:
-                    distance = calc_distance(pac, target, width)
-                    if distance < min_distance:
-                        min_distance = distance
-                        closest_target = target
-                pac_targets[p] = closest_target
+        print(distances, file=sys.stderr)
+
 
     # Phase 2 - Normal pellets
     else:
-        targets = normal_pellets
-
-        pac_targets = [None] * len(pacs_mine)
-        for p, pac in enumerate(pacs_mine):
-            if pac_targets[p] is None:
-                min_distance = math.inf
-                closest_target = None
-                for target in targets:
-                    distance = calc_distance(pac, target, width)
-                    if distance < min_distance:
-                        min_distance = distance
-                        closest_target = target
+        pass
 
    
 

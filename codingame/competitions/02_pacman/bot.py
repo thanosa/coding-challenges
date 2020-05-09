@@ -54,11 +54,11 @@ def calc_distance(p1, p2, width):
 def calc_p2s_distances(pacs, targets, width):
     all_distances = []
     for pac in pacs_mine:
-        targets_distances = []
+        distances = []
         for target in targets:
             distance = calc_distance(pac['position'], target, width)
-            targets_distances.append({target: distance})
-        all_distances.append({'pac_id': pac['id'], 'distances': targets_distances})
+            distances.append({target: distance})
+        all_distances.append({'pac_id': pac['id'], 'distances': distances})
     return all_distances
 
 

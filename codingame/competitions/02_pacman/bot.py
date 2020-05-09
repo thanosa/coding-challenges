@@ -13,6 +13,34 @@ def get_scene():
         scene_dict['rows'].append(input())
     return scene_dict
 
+def get_pacs():
+    pacs_mine = []
+    pacs_their = []
+
+    for i in range(visible_pac_count):
+        # pac_id: pac number (unique within a team)
+        # mine: true if this pac is yours
+        # x: position in the grid
+        # y: position in the grid
+        # type_id: unused in wood leagues
+        # speed_turns_left: unused in wood leagues
+        # ability_cooldown: unused in wood leagues
+        pac_id, mine, x, y, type_id, speed_turns_left, ability_cooldown = input().split()
+ 
+        new_pac = {
+            'id': pac_id,
+            'position': (int(x), int(y)),
+            'type_id': type_id,
+            'speed_turns_left': int(speed_turns_left),
+            'ability_cooldown': int(ability_cooldown)
+        }
+
+        if mine == "1":
+            pacs_mine.append(new_pac)
+        else:
+            pacs_their.append(new_pac)
+    return pacs_mine, pacs_their
+
 
 def calc_distance(p1, p2, width):
     # Manhattan distance
@@ -23,12 +51,12 @@ def calc_distance(p1, p2, width):
     return min(direct, indirect)
 
 
-def calc_distances(pacs, targets, scene):
+def calc_distances(pacs, targets, width):
     all_distances = []
     for pac in pacs_mine:
         targets_distances = []
         for target in targets:
-            distance = calc_distance(pac['position'], target, scene['width'])
+            distance = calc_distance(pac['position'], target, width)
             targets_distances.append({target: distance})
         all_distances.append({'pac_id': pac['id'], 'distances': targets_distances})
     return all_distances
@@ -45,28 +73,8 @@ while True:
 
     my_score, opponent_score = [int(i) for i in input().split()]
     visible_pac_count = int(input())  # all your pacs and enemy pacs in sight
-    for i in range(visible_pac_count):
-        # pac_id: pac number (unique within a team)
-        # mine: true if this pac is yours
-        # x: position in the grid
-        # y: position in the grid
-        # type_id: unused in wood leagues
-        # speed_turns_left: unused in wood leagues
-        # ability_cooldown: unused in wood leagues
-        pac_id, mine, x, y, type_id, speed_turns_left, ability_cooldown = input().split()
- 
-        new_pac = {
-            'id: pac_id,
-            'position': (int(x), int(y)),
-            'type_id': type_id,
-            'speed_turns_left': int(speed_turns_left),
-            'ability_cooldown': int(ability_cooldown)
-        }
 
-        if mine == "1":
-            pacs_mine.append(new_pac)
-        else:
-            pacs_their.append(new_pac)
+    pacs_mine, pacs_their = get_pacs()
 
     visible_pellet_count = int(input())  # all pellets in sight
     
@@ -86,7 +94,7 @@ while True:
     if len(super_pellets) > 0:
 
         # Calculate the distance matrix
-        distances = calc_distances(pacs_mine, super_pellets)
+        distances = calc_distances(pacs_mine, super_pellets, scene['width'])
 
         print(distances, file=sys.stderr)
 

@@ -17,7 +17,7 @@ def get_pacs():
     pacs_mine = []
     pacs_their = []
 
-    for i in range(visible_pac_count):
+    for _ in range(visible_pac_count):
         # pac_id: pac number (unique within a team)
         # mine: true if this pac is yours
         # x: position in the grid
@@ -51,7 +51,7 @@ def calc_distance(p1, p2, width):
     return min(direct, indirect)
 
 
-def calc_distances(pacs, targets, width):
+def calc_p2s_distances(pacs, targets, width):
     all_distances = []
     for pac in pacs_mine:
         targets_distances = []
@@ -94,9 +94,9 @@ while True:
     if len(super_pellets) > 0:
 
         # Calculate the distance matrix
-        distances = calc_distances(pacs_mine, super_pellets, scene['width'])
+        p2s_distances = calc_p2s_distances(pacs_mine, super_pellets, scene['width'])
 
-        print(distances, file=sys.stderr)
+        print(p2s_distances, file=sys.stderr)
 
 
     # Phase 2 - Normal pellets

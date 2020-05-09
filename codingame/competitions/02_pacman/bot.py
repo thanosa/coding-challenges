@@ -71,7 +71,7 @@ def calc_distance(p1, p2, width):
 
 def calc_p2s_distances(pacs, targets, width):
     all_distances = []
-    for pac in pacs_mine:
+    for pac in pacs:
         distances = []
         for target in targets:
             distance = calc_distance(pac['position'], target, width)
@@ -92,55 +92,59 @@ def calc_s2s_distances(targets, width):
     return all_distances
 
 
-# Read the scene
-scene = read_scene() 
+def main():
+    # Read the scene
+    scene = read_scene() 
 
-# Game loop
-turn = 0
-while True:
+    # Game loop
+    turn = 0
+    while True:
 
-    # Read score
-    my_score, opponent_score = [int(i) for i in input().split()]
+        # Read score
+        my_score, opponent_score = [int(i) for i in input().split()]
 
-    # Read pacs
-    pac_count, pacs_mine, pacs_their = read_pacs()
+        # Read pacs
+        pac_count, pacs_mine, pacs_their = read_pacs()
 
-    # Read pellets
-    pellet_count, super_pellets, normal_pellets = read_pellets()
+        # Read pellets
+        pellet_count, super_pellets, normal_pellets = read_pellets()
 
- 
-    # Phase 1 - Super pellets
-    if len(super_pellets) > 0:
-
-        # Calculate the pac to super pellet distances
-        p2s_distances = calc_p2s_distances(pacs_mine, super_pellets, scene['width'])
-
-        # Calculate the super pellet to super pellet distances
-        s2s_distances = calc_s2s_distances(super_pellets, scene['width'])
-
-        print(s2s_distances, file=sys.stderr)
-
-
-    # Phase 2 - Normal pellets
-    else:
-        pass
-
-    pac_targets = []
-
-    # Command generation
-    moves = []
-    speeds = []
-    for pac in pac_targets:
-        moves.append(f"MOVE {pac['id']} {pac['target'][0]} {pac['target'][1]}")
     
-    for pac in pacs_mine:
-        speeds.append(f"SPEED {pac['id']}")
+        # Phase 1 - Super pellets
+        if len(super_pellets) > 0:
+
+            # Calculate the pac to super pellet distances
+            p2s_distances = calc_p2s_distances(pacs_mine, super_pellets, scene['width'])
+
+            # Calculate the super pellet to super pellet distances
+            s2s_distances = calc_s2s_distances(super_pellets, scene['width'])
+
+            print(s2s_distances, file=sys.stderr)
 
 
-    # Turn handler
-    if turn % 10 == 0:
-        print("|".join(speeds))
-    else:
-        print("|".join(moves))
-    turn += 1
+        # Phase 2 - Normal pellets
+        else:
+            pass
 
+        pac_targets = []
+
+        # Command generation
+        moves = []
+        speeds = []
+        for pac in pac_targets:
+            moves.append(f"MOVE {pac['id']} {pac['target'][0]} {pac['target'][1]}")
+        
+        for pac in pacs_mine:
+            speeds.append(f"SPEED {pac['id']}")
+
+
+        # Turn handler
+        if turn % 10 == 0:
+            print("|".join(speeds))
+        else:
+            print("|".join(moves))
+        turn += 1
+
+
+# Entry point
+main()

@@ -87,12 +87,12 @@ while True:
     else:
         pass
 
-   
+    pac_targets = []
 
     # Command generation
     moves = []
     speeds = []
-    print(pac_targets, file=sys.stderr)
+    ## print(pac_targets, file=sys.stderr)
     for p, pac_target in enumerate(pac_targets):
         moves.append(f"MOVE {p} {pac_target[0]} {pac_target[1]}")
     

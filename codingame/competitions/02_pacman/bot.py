@@ -2,6 +2,8 @@ import sys
 import math
 
 
+SUPER_PELLET_VALUE = 10
+
 def read_scene():
     # width: size of the grid
     # height: top left corner is (x=0, y=0)
@@ -41,19 +43,21 @@ def read_pacs():
     return pac_count, pacs_mine, pacs_their
 
 
-def read_pellets(pellet_count):
+def read_pellets():
+
+    # Read pellet count
+    pellet_count = int(input()) 
 
     super_pellets = []
     normal_pellets = []
 
     for _ in range(pellet_count):
-        # value: amount of points this pellet is worth
         x, y, value = [int(j) for j in input().split()]
-        if value == 10:
+        if value == SUPER_PELLET_VALUE:
             super_pellets.append((x, y))
         else:
             normal_pellets.append((x, y))
-    return super_pellets, normal_pellets
+    return pellet_count, super_pellets, normal_pellets
 
 
 def calc_distance(p1, p2, width):
@@ -102,8 +106,7 @@ while True:
     pac_count, pacs_mine, pacs_their = read_pacs()
 
     # Read pellets
-    visible_pellet_count = int(input()) 
-    super_pellets, normal_pellets = read_pellets(visible_pellet_count)
+    pellet_count, super_pellets, normal_pellets = read_pellets()
 
  
     # Phase 1 - Super pellets

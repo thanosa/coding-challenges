@@ -2,7 +2,7 @@ import sys
 import math
 
 
-def get_scene():
+def read_scene():
     # width: size of the grid
     # height: top left corner is (x=0, y=0)
     width, height = [int(i) for i in input().split()]
@@ -13,18 +13,17 @@ def get_scene():
         scene_dict['rows'].append(input())
     return scene_dict
 
-def get_pacs():
+
+def read_pacs():
+
+    # Count the pacs
+    pac_count = int(input()) 
+
+    # Read the pacs
     pacs_mine = []
     pacs_their = []
 
-    for _ in range(visible_pac_count):
-        # pac_id: pac number (unique within a team)
-        # mine: true if this pac is yours
-        # x: position in the grid
-        # y: position in the grid
-        # type_id: unused in wood leagues
-        # speed_turns_left: unused in wood leagues
-        # ability_cooldown: unused in wood leagues
+    for _ in range(pac_count):
         pac_id, mine, x, y, type_id, speed_turns_left, ability_cooldown = input().split()
  
         new_pac = {
@@ -39,10 +38,10 @@ def get_pacs():
             pacs_mine.append(new_pac)
         else:
             pacs_their.append(new_pac)
-    return pacs_mine, pacs_their
+    return pac_count, pacs_mine, pacs_their
 
 
-def get_pellets(pellet_count):
+def read_pellets(pellet_count):
 
     super_pellets = []
     normal_pellets = []
@@ -89,10 +88,10 @@ def calc_s2s_distances(targets, width):
     return all_distances
 
 
-scene = get_scene() 
+# Read the scene
+scene = read_scene() 
 
-
-# game loop
+# Game loop
 turn = 0
 while True:
 
@@ -100,13 +99,11 @@ while True:
     my_score, opponent_score = [int(i) for i in input().split()]
 
     # Read pacs
-    visible_pac_count = int(input()) 
-    pacs_mine, pacs_their = get_pacs()
+    pac_count, pacs_mine, pacs_their = read_pacs()
 
     # Read pellets
     visible_pellet_count = int(input()) 
-    super_pellets, normal_pellets = get_pellets(visible_pellet_count)
-
+    super_pellets, normal_pellets = read_pellets(visible_pellet_count)
 
  
     # Phase 1 - Super pellets
@@ -121,7 +118,6 @@ while True:
         print(s2s_distances, file=sys.stderr)
 
 
-
     # Phase 2 - Normal pellets
     else:
         pass
@@ -131,7 +127,6 @@ while True:
     # Command generation
     moves = []
     speeds = []
-    ## print(pac_targets, file=sys.stderr)
     for pac in pac_targets:
         moves.append(f"MOVE {pac['id']} {pac['target'][0]} {pac['target'][1]}")
     
@@ -144,6 +139,5 @@ while True:
         print("|".join(speeds))
     else:
         print("|".join(moves))
-    
     turn += 1
 

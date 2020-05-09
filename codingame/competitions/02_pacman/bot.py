@@ -95,16 +95,16 @@ scene = get_scene()
 # game loop
 turn = 0
 while True:
-    pacs_mine = []
-    pacs_their = []
 
+    # Read score
     my_score, opponent_score = [int(i) for i in input().split()]
-    visible_pac_count = int(input())  # all your pacs and enemy pacs in sight
 
+    # Read pacs
+    visible_pac_count = int(input()) 
     pacs_mine, pacs_their = get_pacs()
 
-    visible_pellet_count = int(input())  # all pellets in sight
-    
+    # Read pellets
+    visible_pellet_count = int(input()) 
     super_pellets, normal_pellets = get_pellets(visible_pellet_count)
 
 

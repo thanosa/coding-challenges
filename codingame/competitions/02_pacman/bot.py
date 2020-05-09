@@ -2,8 +2,20 @@ import sys
 import math
 
 
-def calc_distance(p1, p2):
-    # Manhattan
+def get_scene():
+    # width: size of the grid
+    # height: top left corner is (x=0, y=0)
+    width, height = [int(i) for i in input().split()]
+    scene_dict = {'width': width, 'height': height, 'rows': []}
+
+    for i in range(height):
+        # space " " is floor, pound "#" is wall
+        scene_dict['rows'].append(input())
+    return scene_dict
+
+
+def calc_distance(p1, p2, width):
+    # Manhattan distance
     x_distance = abs(p1[0] - p2[0])
     y_distance = abs(p1[1] - p2[1])
     direct = x_distance + y_distance
@@ -11,22 +23,18 @@ def calc_distance(p1, p2):
     return min(direct, indirect)
 
 
-def calc_distances(pacs, targets):
+def calc_distances(pacs, targets, scene):
     all_distances = []
     for pac in pacs_mine:
         targets_distances = []
         for target in targets:
-            distance = calc_distance(pac["position"], target)
+            distance = calc_distance(pac['position'], target, scene['width'])
             targets_distances.append({target: distance})
-        all_distances.append({"pac_id": pac["id"], "distances": targets_distances})
+        all_distances.append({'pac_id': pac['id'], 'distances': targets_distances})
     return all_distances
 
 
-# width: size of the grid
-# height: top left corner is (x=0, y=0)
-width, height = [int(i) for i in input().split()]
-for i in range(height):
-    row = input()  # one line of the grid: space " " is floor, pound "#" is wall
+scene = get_scene() 
 
 
 # game loop
@@ -48,11 +56,11 @@ while True:
         pac_id, mine, x, y, type_id, speed_turns_left, ability_cooldown = input().split()
  
         new_pac = {
-            "id": pac_id,
-            "position": (int(x), int(y)),
-            "type_id": type_id,
-            "speed_turns_left": int(speed_turns_left),
-            "ability_cooldown": int(ability_cooldown)
+            'id: pac_id,
+            'position': (int(x), int(y)),
+            'type_id': type_id,
+            'speed_turns_left': int(speed_turns_left),
+            'ability_cooldown': int(ability_cooldown)
         }
 
         if mine == "1":

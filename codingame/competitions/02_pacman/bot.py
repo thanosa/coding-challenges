@@ -62,6 +62,18 @@ def calc_p2s_distances(pacs, targets, width):
     return all_distances
 
 
+def calc_s2s_distances(targets, width):
+    all_distances = []
+    for target1 in targets:
+        distances = []
+        for target2 in targets:
+            if target1 != target2:
+                distance = calc_distance(target1, target2, width)
+                distances.append({target2: distance})
+        all_distances.append({target1: distances})
+    return all_distances
+
+
 scene = get_scene() 
 
 
@@ -93,10 +105,14 @@ while True:
     # Phase 1 - Super pellets
     if len(super_pellets) > 0:
 
-        # Calculate the distance matrix
+        # Calculate the pac to super pellet distances
         p2s_distances = calc_p2s_distances(pacs_mine, super_pellets, scene['width'])
 
-        print(p2s_distances, file=sys.stderr)
+        # Calculate the super pellet to super pellet distances
+        s2s_distances = calc_s2s_distances(super_pellets, scene['width'])
+
+        print(s2s_distances, file=sys.stderr)
+
 
 
     # Phase 2 - Normal pellets

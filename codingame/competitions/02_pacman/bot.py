@@ -125,11 +125,11 @@ while True:
     moves = []
     speeds = []
     ## print(pac_targets, file=sys.stderr)
-    for p, pac_target in enumerate(pac_targets):
-        moves.append(f"MOVE {p} {pac_target[0]} {pac_target[1]}")
+    for pac in pac_targets:
+        moves.append(f"MOVE {pac['id']} {pac['target'][0]} {pac['target'][1]}")
     
-    for p, pac in enumerate(pacs_mine):
-        speeds.append(f"SPEED {p}")
+    for pac in pacs_mine:
+        speeds.append(f"SPEED {pac['id']}")
 
 
     # Turn handler

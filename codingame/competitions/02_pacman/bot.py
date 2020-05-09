@@ -8,7 +8,7 @@ def get_scene():
     width, height = [int(i) for i in input().split()]
     scene_dict = {'width': width, 'height': height, 'rows': []}
 
-    for i in range(height):
+    for _ in range(height):
         # space " " is floor, pound "#" is wall
         scene_dict['rows'].append(input())
     return scene_dict
@@ -40,6 +40,21 @@ def get_pacs():
         else:
             pacs_their.append(new_pac)
     return pacs_mine, pacs_their
+
+
+def get_pellets(pellet_count):
+
+    super_pellets = []
+    normal_pellets = []
+
+    for _ in range(pellet_count):
+        # value: amount of points this pellet is worth
+        x, y, value = [int(j) for j in input().split()]
+        if value == 10:
+            super_pellets.append((x, y))
+        else:
+            normal_pellets.append((x, y))
+    return super_pellets, normal_pellets
 
 
 def calc_distance(p1, p2, width):
@@ -90,16 +105,8 @@ while True:
 
     visible_pellet_count = int(input())  # all pellets in sight
     
-    super_pellets = []
-    normal_pellets = []
+    super_pellets, normal_pellets = get_pellets(visible_pellet_count)
 
-    for i in range(visible_pellet_count):
-        # value: amount of points this pellet is worth
-        x, y, value = [int(j) for j in input().split()]
-        if value == 10:
-            super_pellets.append((x, y))
-        else:
-            normal_pellets.append((x, y))
 
  
     # Phase 1 - Super pellets

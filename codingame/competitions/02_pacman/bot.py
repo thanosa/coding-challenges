@@ -3,7 +3,7 @@ import itertools
 import sys
 import math
 
-
+# Constants
 SUPER_PELLET_VALUE = 10
 WALL = "#"
 FLOOR = " "
@@ -268,7 +268,9 @@ def collect_normal_pellets(pacs_mine, targets, width):
 
     return pac_target
 
-            
+# Cross turn planning varibles
+PREVIOUS_SUPER_PELLET_COUNT = None
+
 
 def main():
 
@@ -277,6 +279,9 @@ def main():
 
     # Collection of all unexplored floor positions.
     unexplored = copy.deepcopy(floor)
+
+    if 'PREVIOUS_SUPER_PELLET_COUNT' is not globals():
+        PREVIOUS_SUPER_PELLET_COUNT = -1
 
     # Game loop.
     turn = 0
@@ -323,6 +328,9 @@ def main():
         else:
             print("|".join(moves))
         turn += 1
+
+        # Updates of the cross turn variables.
+        PREVIOUS_SUPER_PELLET_COUNT = len(super_pellets)
 
 
 # Entry point.

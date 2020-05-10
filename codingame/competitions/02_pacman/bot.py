@@ -82,20 +82,43 @@ def calc_p2s_distances(pacs, targets, width):
 
 
 def calc_s2s_distances(targets, width):
-    iterator = itertools.combinations(targets, 2)
-    distances = {(t1, t2): calc_distance(t1, t2, width) for t1, t2 in iterator}
-    return distances
+    distances_set = set()
+    distances_dict = {}
+    for t1, t2 in itertools.combinations(targets, 2):
+        distance = calc_distance(t1, t2, width)
+        distances_set.add(distance)
+        distances_dict[(t1, t2)] = distance
+    
+    distances_sorted_set = sorted(distances_set, reverse=True)
+    return distances_sorted_set, distances_dict
 
 
-def calc_clusters(s2s_distances, pac_count):
-    print(s2s_distances, file=sys.stderr)
+def calc_clusters(targets, pac_count, width):
+    """
+    The number of clusters should as much as the pacs.
+    """
+    # Initialize the clusters as one-to-one with the targets.
+    clusters = targets[:]
 
-    # The number of clusters should not be more than the pacs.
-    # # if len(s2s_distances) > pac_count:
+    # Calculate the super pellet to super pellet distances.
+    distances_set, distances_dict = calc_s2s_distances(targets, width)
+    print(distances_set, file=sys.stderr)
+    for d in distances_dict.items():
+        print(d, file=sys.stderr)
+
+    while len(clusters) > pac_count:
+
+        cluster = min(distances_dict, key=(lambda key: distances_dict[key]))
+
+        clusters.append(cluster)
+        print(f"cluster: {cluster}", file=sys.stderr)
+
+        cluster_count = len(clusters)
 
 
 
 def main():
+
     # Read the scene
     scene = read_scene() 
 
@@ -115,16 +138,13 @@ def main():
         # Phase 1 - Super pellets
         if len(super_pellets) > 0:
 
+            # Cluster the super pellets
+            super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine),  scene['width'])
+
             # Calculate the pac to super pellet distances
             p2s_distances = calc_p2s_distances(pacs_mine, super_pellets, scene['width'])
 
-            # Calculate the super pellet to super pellet distances
-            s2s_distances = calc_s2s_distances(super_pellets, scene['width'])
-
-            # Clusters the super pellets
-            super_pellets_clusters = calc_clusters(s2s_distances, len(pacs_mine))
-
-            print(super_pellets_clusters, file=sys.stderr)
+            # # print(p2s_distances, file=sys.stderr)
 
 
         # Phase 2 - Normal pellets

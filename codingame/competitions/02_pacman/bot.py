@@ -240,7 +240,7 @@ def assign_targets(pacs_mine, targets, clusters, width, unexplored):
     return pac_target
 
 
-def collect_normal_pellets(pacs_mine, targets, width):
+def collect_normal_pellets(pacs_mine, targets, unexplored, width):
 
     targets_save = copy.deepcopy(targets)
 
@@ -258,18 +258,37 @@ def collect_normal_pellets(pacs_mine, targets, width):
             
             assert selected_target is not None
 
-        # Assign the target to the pac.   
-        pac_target[selected_pac['id']] = selected_target
+            # Assign the target to the pac.   
+            pac_target[pac['id']] = selected_target
 
-        # Remove the assigned target.
-        targets = [x for x in targets if not x == selected_target]
-    else:
-        pass
+            # Remove the assigned target.
+            targets = [x for x in targets if not x == selected_target]
+    
+    elif len(unexplored) > 0:
+        targets = unexplored
+        for pac in pacs_mine:
+            min_distance = math.inf
+            selected_target = None
+            for target in targets:
+                distance = calc_distance(pac['position'], target, width)
+                if distance < min_distance:
+                    min_distance = distance
+                    selected_target = target
+
+            assert selected_target is not None
+
+            # Assign the target to the pac.   
+            pac_target[pac['id']] = selected_target
+
+            # Remove the assigned target.
+            targets = [x for x in targets if not x == selected_target]
 
     return pac_target
 
+
 # Cross turn planning varibles
 PREVIOUS_SUPER_PELLET_COUNT = None
+PREVIOUS_SUPER_PELLET_PLAN = None
 
 
 def main():
@@ -280,8 +299,13 @@ def main():
     # Collection of all unexplored floor positions.
     unexplored = copy.deepcopy(floor)
 
+    # Initialize the cross turn variables.
     if 'PREVIOUS_SUPER_PELLET_COUNT' is not globals():
         PREVIOUS_SUPER_PELLET_COUNT = -1
+
+    # Initialize the cross turn variables.
+    if 'PREVIOUS_SUPER_PELLET_PLAN' is not globals():
+        PREVIOUS_SUPER_PELLET_PLAN = None
 
     # Game loop.
     turn = 0
@@ -301,18 +325,23 @@ def main():
 
         # Phase 1 - Super pellets
         if len(super_pellets) > 0:
+            
+            # We create a super pellet plan only if a super pellet has been disappeared.
+            if PREVIOUS_SUPER_PELLET_PLAN == None or len(super_pellets) < PREVIOUS_SUPER_PELLET_COUNT:
+                # Cluster the super pellets.
+                super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine), scene['width'])
 
-            # Cluster the super pellets.
-            super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine), scene['width'])
+                # Assign a cluster to each pac.
+                pac_targets = assign_targets(pacs_mine, super_pellets, super_pellets_clusters, scene['width'], unexplored)
+            else:
+                pac_targets = PREVIOUS_SUPER_PELLET_PLAN
 
-            # Assign a cluster to each pac.
-            pac_targets = assign_targets(pacs_mine, super_pellets, super_pellets_clusters, scene['width'], unexplored)
 
         # Phase 2 - Normal pellets
         else:
 
             # Collect the normal pellets
-            pac_targets = collect_normal_pellets(pacs_mine, normal_pellets, scene['width'])
+            pac_targets = collect_normal_pellets(pacs_mine, normal_pellets, unexplored, scene['width'])
 
 
         # Print out the result.
@@ -331,7 +360,8 @@ def main():
 
         # Updates of the cross turn variables.
         PREVIOUS_SUPER_PELLET_COUNT = len(super_pellets)
-
+        if len(super_pellets) > 0:
+            PREVIOUS_SUPER_PELLET_PLAN = pac_targets
 
 # Entry point.
 main()

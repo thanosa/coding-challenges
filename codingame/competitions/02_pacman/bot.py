@@ -41,7 +41,7 @@ def read_pacs():
             pacs_mine.append(new_pac)
         else:
             pacs_their.append(new_pac)
-    return pac_count, pacs_mine, pacs_their
+    return pacs_mine, pacs_their
 
 
 def read_pellets():
@@ -82,9 +82,18 @@ def calc_p2s_distances(pacs, targets, width):
 
 
 def calc_s2s_distances(targets, width):
-    iterator = itertools.combinations(targets, 2)
-    distances = [{(t1, t2): calc_distance(t1, t2, width)} for t1, t2 in iterator]
+    distances = {}
+    for t1, t2 in itertools.combinations(targets, 2):
+        distances[(t1, t2)] = calc_distance(t1, t2, width)
     return distances
+
+
+def calc_clusters(s2s_distances, pac_count):
+    print(s2s_distances, file=sys.stderr)
+
+    # The number of clusters should not be more than the pacs.
+    # # if len(s2s_distances) > pac_count:
+
 
 
 def main():
@@ -99,12 +108,11 @@ def main():
         my_score, opponent_score = [int(i) for i in input().split()]
 
         # Read pacs
-        pac_count, pacs_mine, pacs_their = read_pacs()
+        pacs_mine, pacs_their = read_pacs()
 
         # Read pellets
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
-    
         # Phase 1 - Super pellets
         if len(super_pellets) > 0:
 
@@ -114,7 +122,10 @@ def main():
             # Calculate the super pellet to super pellet distances
             s2s_distances = calc_s2s_distances(super_pellets, scene['width'])
 
-            print(s2s_distances, file=sys.stderr)
+            # Clusters the super pellets
+            super_pellets_clusters = calc_clusters(s2s_distances, len(pacs_mine))
+
+            print(super_pellets_clusters, file=sys.stderr)
 
 
         # Phase 2 - Normal pellets

@@ -3,7 +3,7 @@
 	The loop-holes are identified by their y
 	
 2. Enhancement of the target assigment algo
-	The targets should be clustered to the number of the available pac
+	The targets should be clustered to less equal than the number of the available pac
 	Each pac should be assigned to a cluster of targets
 	Each pac should be moved to the closed target of the assigned clustster
 	The assignment should be recalculated:

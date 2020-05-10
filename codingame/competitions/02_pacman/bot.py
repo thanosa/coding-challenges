@@ -1,9 +1,12 @@
+import copy
 import itertools
 import sys
 import math
 
 
 SUPER_PELLET_VALUE = 10
+WALL = "#"
+FLOOR = " "
 
 def read_scene():
     """
@@ -15,10 +18,14 @@ def read_scene():
     width, height = [int(i) for i in input().split()]
     scene_dict = {'width': width, 'height': height, 'rows': []}
 
-    for _ in range(height):
-        scene_dict['rows'].append(input())
+    floor = []
+    for y in range(height):
+        row = input()
+        scene_dict['rows'].append(row)
 
-    return scene_dict
+        floor.extend([(x, y) for x, c in enumerate(row) if c == FLOOR])
+
+    return scene_dict, floor
 
 
 def read_pacs():
@@ -68,6 +75,20 @@ def read_pellets():
             normal_pellets.append((x, y))
 
     return pellet_count, super_pellets, normal_pellets
+
+
+def update_unexplored_floor(floor, pacs_mine, pacs_their):
+    """
+    Updates the floor by eliminating the visited floor positions by any pac.
+    """
+
+    # Current positions of all pacs.
+    pac_positions = [x['position'] for x in pacs_mine + pacs_their]
+
+    # Remove the current pac positions from the floor.
+    floor = [x for x in floor if x not in pac_positions]
+
+    return floor
 
 
 def calc_distance(point1, point2, width):
@@ -148,14 +169,22 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
-def assign_targets(pacs_mine, targets, clusters, width):
+def assign_targets(pacs_mine, targets, clusters, width, unexplored):
     """
-    Assign each cluster to the closest pack based on distance.
+    Assign each cluster to the closest pac based on distance.
     """
 
     assert len(pacs_mine) >= len(clusters)
 
-    pac_to_target = {}
+    #
+    # Pass 1: Assign a pac to each cluster.
+    #
+
+    # Create saved deep copies.
+    clusters_saved = copy.deepcopy(clusters)
+    pacs_mine_saved = copy.deepcopy(pacs_mine)
+
+    pac_target = {}
 
     for cluster in clusters:
 
@@ -178,21 +207,79 @@ def assign_targets(pacs_mine, targets, clusters, width):
         assert selected_target is not None
 
         # Assign the target to the pac.   
-        pac_to_target[selected_pac['id']] = selected_target
+        pac_target[selected_pac['id']] = selected_target
 
-        # Remove the pac.
+        # Remove the assigned pac.
         pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
 
-        # Remove the cluster.
+        # Remove the assigned cluster.
         clusters = [x for x in clusters if not x == selected_cluster]
 
-    return pac_to_target
 
+    #
+    # Pass 2: If there are available pac we assign them to the closest target.
+    #
+
+    # Checks if there are available pacs.
+    if len(pacs_mine) > 0:
+
+        pass
+
+        print(f"Available pacs: {pacs_mine}", file=sys.stderr)
+        for pac in pacs_mine:
+            min_distance = math.inf
+            selected_target = None
+            for target in targets:
+                distance = calc_distance(pac['position'], target, width)
+                if distance < min_distance:
+                    distance = min_distance
+                    selected_target = target
+            
+            assert selected_target is not None
+
+            # Assign the target to the pac.s
+            pac_target[pac['id']] = selected_target
+
+    return pac_target
+
+
+def collect_normal_pellets(pacs_mine, targets, width):
+
+    targets_save = copy.deepcopy(targets)
+
+    pac_target = {}
+
+    if len(targets) > 0:
+        for pac in pacs_mine:
+            min_distance = math.inf
+            selected_target = None
+            for target in targets:
+                distance = calc_distance(pac['position'], target, width)
+                if distance < min_distance:
+                    min_distance = distance
+                    selected_target = target
+            
+            assert selected_target is not None
+
+        # Assign the target to the pac.   
+        pac_target[selected_pac['id']] = selected_target
+
+        # Remove the assigned target.
+        targets = [x for x in targets if not x == selected_target]
+    else:
+        pass
+
+    return pac_target
+
+            
 
 def main():
 
     # Read the scene.
-    scene = read_scene() 
+    scene, floor = read_scene() 
+
+    # Collection of all unexplored floor positions.
+    unexplored = copy.deepcopy(floor)
 
     # Game loop.
     turn = 0
@@ -204,6 +291,9 @@ def main():
         # Read pacs.
         pacs_mine, pacs_their = read_pacs()
 
+        # Update the unexplored floor.
+        unexplored = update_unexplored_floor(unexplored, pacs_mine, pacs_their)
+
         # Read pellets.
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
@@ -214,14 +304,17 @@ def main():
             super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine), scene['width'])
 
             # Assign a cluster to each pac.
-            pac_targets = assign_targets(pacs_mine, super_pellets, super_pellets_clusters, scene['width'])
+            pac_targets = assign_targets(pacs_mine, super_pellets, super_pellets_clusters, scene['width'], unexplored)
 
         # Phase 2 - Normal pellets
         else:
-            pass
-        
+
+            # Collect the normal pellets
+            pac_targets = collect_normal_pellets(pacs_mine, normal_pellets, scene['width'])
+
+
         # Print out the result.
-        print(f"pack targets: {pac_targets}", file=sys.stderr)
+        print(f"pac targets: {pac_targets}", file=sys.stderr)
 
         # Command generation.
         moves = [f"MOVE {pac} {target[0]} {target[1]}" for pac, target in pac_targets.items()]

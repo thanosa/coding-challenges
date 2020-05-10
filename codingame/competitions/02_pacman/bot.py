@@ -82,9 +82,8 @@ def calc_p2s_distances(pacs, targets, width):
 
 
 def calc_s2s_distances(targets, width):
-    distances = {}
-    for t1, t2 in itertools.combinations(targets, 2):
-        distances[(t1, t2)] = calc_distance(t1, t2, width)
+    iterator = itertools.combinations(targets, 2)
+    distances = {(t1, t2): calc_distance(t1, t2, width) for t1, t2 in iterator}
     return distances
 
 

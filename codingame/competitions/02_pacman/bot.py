@@ -109,16 +109,20 @@ def calc_clusters(targets, pac_count, width):
 
     for _ in range(len(clusters) - pac_count):
         print(f"pac, clusters count: {pac_count}, {len(clusters)}", file=sys.stderr)
-        cluster = min(distances_dict, key=(lambda key: distances_dict[key]))
-        
-        print(f"cluster: {cluster}", file=sys.stderr)
-        print(f"clusters before: {clusters}", file=sys.stderr)
 
+        cluster = min(distances_dict, key=(lambda key: distances_dict[key]))
+        print(f"cluster: {cluster}", file=sys.stderr)
+        print(f"distances_dict before: {distances_dict}", file=sys.stderr)
+        del distances_dict[cluster]
+        print(f"distances_dict after: {distances_dict}", file=sys.stderr)
+        
+        
+        
+        print(f"clusters: {clusters}", file=sys.stderr)
         # Actual merge of the clustering
         clusters = [x for x in clusters if (x[0] != cluster[0]) and (x[0] != cluster[1])]
-        print(f"clusters intermediate: {clusters}", file=sys.stderr)
         clusters.append([x for x in cluster])
-        print(f"clusters after: {clusters}", file=sys.stderr)
+        
 
 
 

@@ -1,3 +1,4 @@
+import itertools
 import sys
 import math
 
@@ -81,15 +82,11 @@ def calc_p2s_distances(pacs, targets, width):
 
 
 def calc_s2s_distances(targets, width):
-    all_distances = []
-    for target1 in targets:
-        distances = []
-        for target2 in targets:
-            if target1 != target2:
-                distance = calc_distance(target1, target2, width)
-                distances.append({target2: distance})
-        all_distances.append({target1: distances})
-    return all_distances
+    distances = []
+    for t1, t2 in itertools.combinations(targets, 2):
+        distance = calc_distance(t1, t2, width)
+        distances.append({(t1, t2): distance})
+    return distances
 
 
 def main():

@@ -6,19 +6,25 @@ import math
 SUPER_PELLET_VALUE = 10
 
 def read_scene():
-    # width: size of the grid
-    # height: top left corner is (x=0, y=0)
+    """
+    Reads the scene.
+    '#' represents wall
+    ' ' represents floor
+    The top left corner is the (x=0, y=0)
+    """
     width, height = [int(i) for i in input().split()]
     scene_dict = {'width': width, 'height': height, 'rows': []}
 
     for _ in range(height):
-        # space " " is floor, pound "#" is wall
         scene_dict['rows'].append(input())
+
     return scene_dict
 
 
 def read_pacs():
-
+    """
+    Read the pacs information.
+    """
     # Count the pacs
     pac_count = int(input()) 
 
@@ -41,14 +47,16 @@ def read_pacs():
             pacs_mine.append(new_pac)
         else:
             pacs_their.append(new_pac)
+
     return pacs_mine, pacs_their
 
 
 def read_pellets():
+    """
+    Reads the pallet information
+    """
 
-    # Read pellet count
     pellet_count = int(input()) 
-
     super_pellets = []
     normal_pellets = []
 
@@ -58,19 +66,28 @@ def read_pellets():
             super_pellets.append((x, y))
         else:
             normal_pellets.append((x, y))
+
     return pellet_count, super_pellets, normal_pellets
 
 
-def calc_distance(p1, p2, width):
-    # Manhattan distance
-    x_distance = abs(p1[0] - p2[0])
-    y_distance = abs(p1[1] - p2[1])
+def calc_distance(target1, target2, width):
+    """
+    Heuristic function to calculate the distance between two targets.
+    It is based on the Manhattan distance.
+    It is refined to consider the wrap of the scene.
+    """
+    x_distance = abs(target1[0] - target2[0])
+    y_distance = abs(target1[1] - target2[1])
     direct = x_distance + y_distance
     indirect = width - x_distance + y_distance + 1
+
     return min(direct, indirect)
 
 
-def calc_p2s_distances(pacs, targets, width):
+def calc_p2t_distances(pacs, targets, width):
+    """
+    Calculates the pac to target distances. 
+    """
     all_distances = []
     for pac in pacs:
         distances = []
@@ -78,10 +95,14 @@ def calc_p2s_distances(pacs, targets, width):
             distance = calc_distance(pac['position'], target, width)
             distances.append({target: distance})
         all_distances.append({'pac_id': pac['id'], 'distances': distances})
+
     return all_distances
 
 
-def calc_s2s_distances(targets, width):
+def calc_t2t_distances(targets, width):
+    """
+    Calculates the target to target distances.
+    """
     distances_set = set()
     distances_dict = {}
     for t1, t2 in itertools.combinations(targets, 2):
@@ -90,6 +111,7 @@ def calc_s2s_distances(targets, width):
         distances_dict[(t1, t2)] = distance
     
     distances_sorted_set = sorted(distances_set, reverse=True)
+
     return distances_sorted_set, distances_dict
 
 
@@ -100,30 +122,37 @@ def calc_clusters(targets, pac_count, width):
     # Initialize the clusters as one-to-one with the targets.
     clusters = [[x] for x in targets]
 
-    # Calculate the super pellet to super pellet distances.
-    distances_set, distances_dict = calc_s2s_distances(targets, width)
-    print(f"distances_set: {distances_set}", file=sys.stderr)
-    for d in distances_dict.items():
-        print(d, file=sys.stderr)
-
-
-    for _ in range(len(clusters) - pac_count):
+    if len(clusters) > pac_count:
         print(f"pac, clusters count: {pac_count}, {len(clusters)}", file=sys.stderr)
+        
+        # Calculate the super pellet to super pellet distances.
+        distances_set, distances_dict = calc_t2t_distances(targets, width)
 
-        cluster = min(distances_dict, key=(lambda key: distances_dict[key]))
-        print(f"cluster: {cluster}", file=sys.stderr)
-        print(f"distances_dict before: {distances_dict}", file=sys.stderr)
-        del distances_dict[cluster]
-        print(f"distances_dict after: {distances_dict}", file=sys.stderr)
-        
-        
-        
-        print(f"clusters: {clusters}", file=sys.stderr)
-        # Actual merge of the clustering
-        clusters = [x for x in clusters if (x[0] != cluster[0]) and (x[0] != cluster[1])]
-        clusters.append([x for x in cluster])
-        
+        print(f"unique distances: {distances_set}", file=sys.stderr)
+        for d in distances_dict.items():
+            print(d, file=sys.stderr)
 
+        # Clustering the targets one-by-one until they become as much as my pacs.
+        for _ in range(len(clusters) - pac_count):
+            pair_to_join = min(distances_dict, key=(lambda key: distances_dict[key]))
+            print(f"pair to join: {pair_to_join}", file=sys.stderr)
+
+            # Update of the distances matrix
+            del distances_dict[pair_to_join]
+
+            # Actual merge of the clustering
+            clusters = [x for x in clusters if (x[0] != pair_to_join[0]) and (x[0] != pair_to_join[1])]
+            clusters.append([x for x in pair_to_join])
+    
+    return clusters
+
+
+def assign_clusters_to_pacs():
+    """
+    Assign each cluster to the closest pack based on distance.
+    """
+    # Calculate the pac to super pellet distances
+    p2s_distances = calc_p2t_distances(pacs_mine, super_pellets, scene['width'])
 
 
 def main():
@@ -148,10 +177,10 @@ def main():
         if len(super_pellets) > 0:
 
             # Cluster the super pellets
-            super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine),  scene['width'])
+            super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine), scene['width'])
 
-            # Calculate the pac to super pellet distances
-            p2s_distances = calc_p2s_distances(pacs_mine, super_pellets, scene['width'])
+            # Assign a cluster to each pac.
+            pac_targets = assign_clusters_to_pacs(super_pellets_clusters, pacs_mine, scene['width'])
 
             # # print(p2s_distances, file=sys.stderr)
 

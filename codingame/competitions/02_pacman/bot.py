@@ -98,22 +98,21 @@ def calc_clusters(targets, pac_count, width):
     The number of clusters should as much as the pacs.
     """
     # Initialize the clusters as one-to-one with the targets.
-    clusters = targets[:]
+    clusters = [[x] for x in targets]
 
     # Calculate the super pellet to super pellet distances.
     distances_set, distances_dict = calc_s2s_distances(targets, width)
-    print(distances_set, file=sys.stderr)
+    print(f"distances_set: {distances_set}", file=sys.stderr)
     for d in distances_dict.items():
         print(d, file=sys.stderr)
 
-    while len(clusters) > pac_count:
 
+    for _ in range(len(clusters) - pac_count):
+        print(f"pac, clusters count: {pac_count}, {len(clusters)}", file=sys.stderr)
         cluster = min(distances_dict, key=(lambda key: distances_dict[key]))
-
-        clusters.append(cluster)
+        
         print(f"cluster: {cluster}", file=sys.stderr)
-
-        cluster_count = len(clusters)
+        print(f"clusters: {clusters}", file=sys.stderr)
 
 
 

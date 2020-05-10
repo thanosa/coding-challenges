@@ -1,3 +1,8 @@
+- Fix of the super pellet collection
+    The super pellet planning should be recalculated only if the super pellet count changes
+    This is because there are cases where the pacs have to move away frmo their assigned targets to reach them,
+    which might cause another pac to come closer to the other's pac super pellet.
+
 - Enhacement of the super pallet collection
     Our packs stop once the collect their first super pallet
     They should move directly to the next supper pallet

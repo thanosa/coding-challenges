@@ -217,22 +217,19 @@ def assign_targets(pacs_mine, targets, clusters, width, unexplored):
 
 
     #
-    # Pass 2: If there are available pac we assign them to the closest target.
+    # Pass 2: If there are available pac we assign them the most distant target.
     #
 
     # Checks if there are available pacs.
     if len(pacs_mine) > 0:
-
-        pass
-
         print(f"Available pacs: {pacs_mine}", file=sys.stderr)
         for pac in pacs_mine:
-            min_distance = math.inf
+            max_distance = -1
             selected_target = None
-            for target in targets:
+            for target in unexplored:
                 distance = calc_distance(pac['position'], target, width)
-                if distance < min_distance:
-                    distance = min_distance
+                if distance > max_distance:
+                    distance = max_distance
                     selected_target = target
             
             assert selected_target is not None

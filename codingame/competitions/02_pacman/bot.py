@@ -216,24 +216,20 @@ def main():
             # Assign a cluster to each pac.
             pac_targets = assign_targets(pacs_mine, super_pellets, super_pellets_clusters, scene['width'])
 
-            print(pac_targets, file=sys.stderr)
-
-
         # Phase 2 - Normal pellets
         else:
             pass
 
-        pac_targets = []
-
         # Command generation.
         moves = []
         speeds = []
-        for pac in pac_targets:
-            moves.append(f"MOVE {pac['id']} {pac['target'][0]} {pac['target'][1]}")
+
+        print(f"pack targets: {pac_targets}", file=sys.stderr)
+        for pac, target in pac_targets.items():
+            moves.append(f"MOVE {pac} {target[0]} {target[1]}")
         
         for pac in pacs_mine:
             speeds.append(f"SPEED {pac['id']}")
-
 
         # Turn handler.
         if turn % 10 == 0:

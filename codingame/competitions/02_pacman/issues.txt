@@ -1,21 +1,17 @@
-1. Enhancement of the distance heuristic accuracy
+- Enhacement of the super pallet collection
+    Our packs stop once the collect their first super pallet
+    They should move directly to the next supper pallet
+
+- Enhancement of the distance heuristic accuracy
 	The wrapped distance should not be horizontal but take the loop-holes into consideration
 	The loop-holes are identified by their y
+
+- Enhancement of cases with collisions with friends
+	When our pacs are collide they should return selecting the first new available path.
 	
-2. Enhancement of the target assigment algo
-	The targets should be clustered to less equal than the number of the available pac
-	Each pac should be assigned to a cluster of targets
-	Each pac should be moved to the closed target of the assigned clustster
-	The assignment should be recalculated:
-		For the super pellets -> once the target count has been decreased
-		For the normal pellets -> maybe this update or algo doesn't work
-		
-3. Enhancement of the navigation
-	Once our pacs are collide they should return selecting the first new available path.
-	
-4. Enchancement of the navigation
-	Once our pac collides with an enemy pac, 
-		if we lose -> we should follow the same strategy as with our pacs
-		if we win  -> 
+- Enchancement of cases with collisions with enemies
+	When our pac collides with an enemy pac, 
+		if we are behind in score -> we should follow the same strategy as with our pacs
+		if we are behind in score -> 
 			if they stay -> we should stay
 			if they leave -> we should leave

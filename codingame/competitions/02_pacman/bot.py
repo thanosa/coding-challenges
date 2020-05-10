@@ -219,18 +219,14 @@ def main():
         # Phase 2 - Normal pellets
         else:
             pass
+        
+        # Print out the result.
+        print(f"pack targets: {pac_targets}", file=sys.stderr)
 
         # Command generation.
-        moves = []
-        speeds = []
-
-        print(f"pack targets: {pac_targets}", file=sys.stderr)
-        for pac, target in pac_targets.items():
-            moves.append(f"MOVE {pac} {target[0]} {target[1]}")
-        
-        for pac in pacs_mine:
-            speeds.append(f"SPEED {pac['id']}")
-
+        moves = [f"MOVE {pac} {target[0]} {target[1]}" for pac, target in pac_targets.items()]
+        speeds = [f"SPEED {pac['id']}" for pac in pacs_mine]
+       
         # Turn handler.
         if turn % 10 == 0:
             print("|".join(speeds))

@@ -112,7 +112,13 @@ def calc_clusters(targets, pac_count, width):
         cluster = min(distances_dict, key=(lambda key: distances_dict[key]))
         
         print(f"cluster: {cluster}", file=sys.stderr)
-        print(f"clusters: {clusters}", file=sys.stderr)
+        print(f"clusters before: {clusters}", file=sys.stderr)
+
+        # Actual merge of the clustering
+        clusters = [x for x in clusters if (x[0] != cluster[0]) and (x[0] != cluster[1])]
+        print(f"clusters intermediate: {clusters}", file=sys.stderr)
+        clusters.append([x for x in cluster])
+        print(f"clusters after: {clusters}", file=sys.stderr)
 
 
 

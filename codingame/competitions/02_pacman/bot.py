@@ -70,14 +70,14 @@ def read_pellets():
     return pellet_count, super_pellets, normal_pellets
 
 
-def calc_distance(target1, target2, width):
+def calc_distance(point1, point2, width):
     """
     Heuristic function to calculate the distance between two targets.
     It is based on the Manhattan distance.
     It is refined to consider the wrap of the scene.
     """
-    x_distance = abs(target1[0] - target2[0])
-    y_distance = abs(target1[1] - target2[1])
+    x_distance = abs(point1[0] - point2[0])
+    y_distance = abs(point1[1] - point2[1])
     direct = x_distance + y_distance
     indirect = width - x_distance + y_distance + 1
 
@@ -86,7 +86,8 @@ def calc_distance(target1, target2, width):
 
 def calc_p2t_distances(pacs, targets, width):
     """
-    Calculates the pac to target distances. 
+    Calculates the pac to target distances.
+    Currently not used.
     """
     all_distances = []
     for pac in pacs:
@@ -117,7 +118,7 @@ def calc_t2t_distances(targets, width):
 
 def calc_clusters(targets, pac_count, width):
     """
-    The number of clusters should as much as the pacs.
+    The number of clusters should not be more than my pacs.
     """
     # Initialize the clusters as one-to-one with the targets.
     clusters = [[x] for x in targets]
@@ -147,42 +148,75 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
-def assign_clusters_to_pacs():
+def assign_targets(pacs_mine, targets, clusters, width):
     """
     Assign each cluster to the closest pack based on distance.
     """
-    # Calculate the pac to super pellet distances
-    p2s_distances = calc_p2t_distances(pacs_mine, super_pellets, scene['width'])
+
+    assert len(pacs_mine) >= len(clusters)
+
+    pac_to_target = {}
+
+    for cluster in clusters:
+
+        min_distance = math.inf
+        selected_pac = None
+        selected_cluster = None
+        selected_target = None
+
+        for target in cluster:
+            for pac in pacs_mine:
+                distance = calc_distance(pac['position'], target, width)
+                if distance < min_distance:
+                    min_distance = distance
+                    selected_pac = pac
+                    selected_cluster = cluster
+                    selected_target = target
+
+        assert selected_pac is not None
+        assert selected_cluster is not None
+        assert selected_target is not None
+
+        # Assign the target to the pac.   
+        pac_to_target[selected_pac['id']] = selected_target
+
+        # Remove the pac.
+        pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
+
+        # Remove the cluster.
+        clusters = [x for x in clusters if not x == selected_cluster]
+
+    return pac_to_target
 
 
 def main():
 
-    # Read the scene
+    # Read the scene.
     scene = read_scene() 
 
-    # Game loop
+    # Game loop.
     turn = 0
     while True:
 
-        # Read score
+        # Read score.
         my_score, opponent_score = [int(i) for i in input().split()]
 
-        # Read pacs
+        # Read pacs.
         pacs_mine, pacs_their = read_pacs()
 
-        # Read pellets
+        # Read pellets.
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
         # Phase 1 - Super pellets
         if len(super_pellets) > 0:
 
-            # Cluster the super pellets
+            # Cluster the super pellets.
             super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine), scene['width'])
 
             # Assign a cluster to each pac.
-            pac_targets = assign_clusters_to_pacs(super_pellets_clusters, pacs_mine, scene['width'])
+            pac_targets = assign_targets(pacs_mine, super_pellets, super_pellets_clusters, scene['width'])
 
-            # # print(p2s_distances, file=sys.stderr)
+            print(pac_targets, file=sys.stderr)
 
 
         # Phase 2 - Normal pellets
@@ -191,7 +225,7 @@ def main():
 
         pac_targets = []
 
-        # Command generation
+        # Command generation.
         moves = []
         speeds = []
         for pac in pac_targets:
@@ -201,7 +235,7 @@ def main():
             speeds.append(f"SPEED {pac['id']}")
 
 
-        # Turn handler
+        # Turn handler.
         if turn % 10 == 0:
             print("|".join(speeds))
         else:
@@ -209,5 +243,5 @@ def main():
         turn += 1
 
 
-# Entry point
+# Entry point.
 main()

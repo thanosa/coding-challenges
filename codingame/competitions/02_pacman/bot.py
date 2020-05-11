@@ -169,23 +169,21 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
-def assign_targets(pacs_mine, targets, width, unexplored):
+def collect_super_pellets(pacs_mine, targets, width, unexplored):
     """
     Assign each cluster to the closest pac based on distance.
     """
 
-    #
     # Preparation: Cluster the super pellets.
-    #
     clusters = calc_clusters(targets, len(pacs_mine), width)
     assert len(pacs_mine) >= len(clusters)
 
-    #
-    # Pass 1: Assign a pac to each cluster.
-    #
-
-    # We do a plan if we don't have one or if a super pellet has been disappered.
+    # A new plan is done only if there is none 
+    # or if a super pellet has been disappered in last turn
     if PREVIOUS_SUPER_PELLET_PLAN == None or len(targets) < PREVIOUS_SUPER_PELLET_COUNT:
+
+        # Assign a pac to each cluster.
+        
         # Create saved deep copies.
         clusters_saved = copy.deepcopy(clusters)
 
@@ -219,30 +217,9 @@ def assign_targets(pacs_mine, targets, width, unexplored):
 
             # Remove the assigned cluster.
             clusters = [x for x in clusters if not x == selected_cluster]
-
-
-    #
-    # Pass 2: If there are available pacs we assign them the most distant target.
-    #
-
-    # Checks if there are available pacs.
-    if len(pacs_mine) > 0:
-        print(f"Available pacs: {pacs_mine}", file=sys.stderr)
-        for pac in pacs_mine:
-            max_distance = -1
-            selected_target = None
-            for target in unexplored:
-                distance = calc_distance(pac['position'], target, width)
-                if distance > max_distance:
-                    distance = max_distance
-                    selected_target = target
-            
-            assert selected_target is not None
-
-            # Assign the target to the pac.s
-            pac_target[pac['id']] = selected_target
-
-    return pac_target
+    
+    # The pacs_mine now has the available pacs.
+    return pac_target, pacs_mine
 
 
 def collect_normal_pellets(pacs_mine, targets, unexplored, width):
@@ -251,6 +228,7 @@ def collect_normal_pellets(pacs_mine, targets, unexplored, width):
 
     pac_target = {}
 
+    # Assign each pac to the closes normal pellet.
     for pac in pacs_mine:
         min_distance = math.inf
         selected_target = None
@@ -267,6 +245,7 @@ def collect_normal_pellets(pacs_mine, targets, unexplored, width):
             # Remove the assigned target.
             targets = [x for x in targets if not x == selected_target]
     
+    # If there are still available pacs they are sent the unexplored floor.
     if len(pac_target) < len(pacs_mine):
         if len(unexplored) > 0:
             targets = unexplored
@@ -306,8 +285,6 @@ def main():
     # Initialize the cross turn variables.
     if 'PREVIOUS_SUPER_PELLET_COUNT' is not globals():
         PREVIOUS_SUPER_PELLET_COUNT = -1
-
-    # Initialize the cross turn variables.
     if 'PREVIOUS_SUPER_PELLET_PLAN' is not globals():
         PREVIOUS_SUPER_PELLET_PLAN = None
 
@@ -327,23 +304,18 @@ def main():
         # Read pellets.
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
-        # Phase 1 - Super pellets
+        # Pass 1 - Collect super pellets
+        pac_to_super = {}
         if len(super_pellets) > 0:
+            pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'], unexplored)
 
-            # Assign a cluster to each pac.
-            pac_targets = assign_targets(pacs_mine, super_pellets, scene['width'], unexplored)
+        # Pass 2 - Collect normal pellets.
+        pac_to_normal = {}
+        if available_pacs:
+            pac_to_normal = collect_normal_pellets(pacs_mine, normal_pellets, unexplored, scene['width'])
 
-
-
-        # Phase 2 - Normal pellets
-        else:
-
-            # Collect the normal pellets
-            print(f"normal pellets: {normal_pellets}", file=sys.stderr)
-            pac_targets = collect_normal_pellets(pacs_mine, normal_pellets, unexplored, scene['width'])
-
-
-        # Print out the result.
+        # Merge the pac targets.
+        pac_targets = {**pac_to_super, **pac_to_normal}
         print(f"pac targets: {pac_targets}", file=sys.stderr)
 
         # Command generation.
@@ -360,7 +332,7 @@ def main():
         # Updates of the cross turn variables.
         PREVIOUS_SUPER_PELLET_COUNT = len(super_pellets)
         if len(super_pellets) > 0:
-            PREVIOUS_SUPER_PELLET_PLAN = pac_targets
+            PREVIOUS_SUPER_PELLET_PLAN = pac_to_super
 
 # Entry point.
 main()

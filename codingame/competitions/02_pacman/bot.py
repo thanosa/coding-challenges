@@ -169,9 +169,15 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
-def collect_super_pellets(pacs_mine, targets, width, unexplored):
+def collect_super_pellets(pacs_mine, targets, width):
     """
-    Assign each cluster to the closest pac based on distance.
+    The planning is done the first time and it is updated only if the count of the 
+    super pallets is decreased.
+
+    The super pellets are clustered one by one until they reach the number of pacs.
+    Each cluster is assigned to the closest pac and that pac will move to the closest 
+    supper pellet of the assigned cluster.
+
     """
 
     # Preparation: Cluster the super pellets.
@@ -222,9 +228,12 @@ def collect_super_pellets(pacs_mine, targets, width, unexplored):
     return pac_target, pacs_mine
 
 
-def collect_normal_pellets(pacs_mine, targets, unexplored, width):
-    print(f"targets: {targets}", file=sys.stderr)
-    targets_save = copy.deepcopy(targets)
+def collect_normal_pellets(pacs_mine, targets, width):
+    """
+    Each pac is assgined to the closest available normal pellet
+    """
+
+    print(f"normal pellets: {targets}", file=sys.stderr)
 
     pac_target = {}
 
@@ -244,28 +253,35 @@ def collect_normal_pellets(pacs_mine, targets, unexplored, width):
 
             # Remove the assigned target.
             targets = [x for x in targets if not x == selected_target]
+
+    return pac_target
+
+
+def explore_floor(pacs_mine, unexplored, width):
+    """
+    The pacs are sent the most distant floor of the unexplored area.
+    """
+    pac_target = {}
     
-    # If there are still available pacs they are sent the unexplored floor.
-    if len(pac_target) < len(pacs_mine):
-        if len(unexplored) > 0:
-            targets = unexplored
-            for pac in pacs_mine:
-                min_distance = math.inf
-                selected_target = None
-                for target in targets:
-                    distance = calc_distance(pac['position'], target, width)
-                    if distance < min_distance:
-                        min_distance = distance
-                        selected_target = target
+    if len(unexplored) > 0:
+        targets = unexplored
+        for pac in pacs_mine:
+            min_distance = math.inf
+            selected_target = None
+            for target in targets:
+                distance = calc_distance(pac['position'], target, width)
+                if distance < min_distance:
+                    min_distance = distance
+                    selected_target = target
 
-                assert selected_target is not None
+            assert selected_target is not None
 
-                # Assign the target to the pac.   
-                pac_target[pac['id']] = selected_target
+            # Assign the target to the pac.   
+            pac_target[pac['id']] = selected_target
 
-                # Remove the assigned target.
-                targets = [x for x in targets if not x == selected_target]
-
+            # Remove the assigned target.
+            targets = [x for x in targets if not x == selected_target]
+    
     return pac_target
 
 
@@ -313,6 +329,10 @@ def main():
         pac_to_normal = {}
         if available_pacs:
             pac_to_normal = collect_normal_pellets(pacs_mine, normal_pellets, unexplored, scene['width'])
+
+        # TODO only the available pacs should go to explore
+        # pac_to_explore = {}
+
 
         # Merge the pac targets.
         pac_targets = {**pac_to_super, **pac_to_normal}

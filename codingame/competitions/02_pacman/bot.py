@@ -256,10 +256,6 @@ def collect_normal_pellets(pacs_mine, targets, unexplored, width):
         selected_target = None
         for target in targets:
             distance = calc_distance(pac['position'], target, width)
-            print(f"pac: {pac['id']}", file=sys.stderr)
-            print(f"target: {target}", file=sys.stderr)
-            print(f"distance: {distance}", file=sys.stderr)
-            print(f"min_distance: {min_distance}", file=sys.stderr)
             if distance < min_distance:
                 min_distance = distance
                 selected_target = target
@@ -351,7 +347,7 @@ def main():
         print(f"pac targets: {pac_targets}", file=sys.stderr)
 
         # Command generation.
-        moves = [f"MOVE {pac} {target[0]} {target[1]}" for pac, target in pac_targets.items()]
+        moves = [f"MOVE {pac} {target[0]} {target[1]} ({target[0]},{target[1]})" for pac, target in pac_targets.items()]
         speeds = [f"SPEED {pac['id']}" for pac in pacs_mine]
        
         # Turn handler.

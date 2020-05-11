@@ -1,3 +1,7 @@
+- Enhancement of the naviagation
+    The pac should prefer the connected paths versus the dead-ends
+    A floor is a dead-end if it has 1 liberty or 2 liberties but it is next to a dead-end
+
 - Enhacement of the super pallet collection
     The allocation is not done optimal
     The alogorithm should be reconsidered

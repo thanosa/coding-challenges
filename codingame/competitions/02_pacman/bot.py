@@ -169,6 +169,22 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
+def collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, width):
+    """
+    Collects the super pellets as first priority
+    """
+
+    if len(super_pellets) > 0:
+        # There is no plan or super pellets have been captured.
+        there_is_no_super_pellet_plan = last_super_pellet_plan == None
+        super_pellets_decreased = len(super_pellets) < last_super_pellet_count
+
+        if there_is_no_super_pellet_plan or super_pellets_decreased:
+            return plan_super_pellets(pacs_mine, super_pellets, width)
+        else:
+            return last_super_pellet_plan
+    
+
 def plan_super_pellets(pacs_mine, targets, width):
     """
     The planning is done the first time and it is updated only if the count of the 
@@ -231,9 +247,13 @@ def find_available_pacs(pacs_mine, pac_to_super, pac_to_normal=None):
     print(f"pac_to_super  : {pac_to_super}", file=sys.stderr)
     print(f"pac_to_normal : {pac_to_normal}", file=sys.stderr)
 
-    pac_assigned = pac_to_super if pac_to_normal == None else {**pac_to_super, **pac_to_normal}
+    available_pacs = pacs_mine
 
-    available_pacs = [x for x in pacs_mine if x['id'] not in pac_assigned.keys()]
+    if pac_to_super is not None:
+        available_pacs = [x for x in pacs_mine if x['id'] not in pac_to_super.keys()]
+
+    if pac_to_normal is not None:
+        available_pacs = [x for x in available_pacs if x['id'] not in pac_to_normal.keys()]
 
     print(f"available_pacs: {available_pacs}", file=sys.stderr)
 
@@ -298,6 +318,24 @@ def explore_floor(pacs_mine, unexplored, width):
     return pac_target
 
 
+def merge_targets(pac_to_super, pac_to_normal, pac_to_explore):
+    """
+    Merges the targets dictionaries into a single one.
+    """
+    pac_targets = {}
+
+    if pac_to_super is not None:
+        pac_targets = pac_to_super
+    
+    if pac_to_normal is not None:
+        pac_targets.update(pac_to_normal)
+
+    if pac_to_explore is not None:
+        pac_targets.update(pac_to_explore)
+
+    return pac_targets
+
+
 def main():
 
     # Read the scene.
@@ -327,30 +365,21 @@ def main():
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
         # Pass 1 - Collect super pellets
-        pac_to_super = {}
-
-        if len(super_pellets) > 0:
-            # There is no plan or super pellets have been captured.
-            if last_super_pellet_plan == None or len(super_pellets) < last_super_pellet_count:
-                pac_to_super = plan_super_pellets(pacs_mine, super_pellets, scene['width'])
-            else:
-                pac_to_super = last_super_pellet_plan
+        pac_to_super = collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene['width'])
 
         # Pass 2 - Collect normal pellets.
-        pac_to_normal = {}
         available_pacs = find_available_pacs(pacs_mine, pac_to_super)
         pac_to_normal = plan_normal_pellets(available_pacs, normal_pellets, scene['width'])
 
-        # TODO only the available pacs should go to explore
+        # Pass 3 - Exploration of the unexplored floor.
         available_pacs = find_available_pacs(pacs_mine, pac_to_super, pac_to_normal)
-
-        # pac_to_explore = {}
-
+        pac_to_explore = {}
 
         # Merge the pac targets.
-        print(f"pac targets super : {pac_to_super}", file=sys.stderr)
-        print(f"pac targets normal: {pac_to_normal}", file=sys.stderr)
-        pac_targets = {**pac_to_super, **pac_to_normal}
+        print(f"pac targets super  : {pac_to_super}", file=sys.stderr)
+        print(f"pac targets normal : {pac_to_normal}", file=sys.stderr)
+        print(f"pac targets explore: {pac_to_explore}", file=sys.stderr)
+        pac_targets = merge_targets(pac_to_super, pac_to_normal, pac_to_explore)
 
         # Command generation.
         moves = [f"MOVE {pac} {target[0]} {target[1]} ({target[0]},{target[1]})" for pac, target in pac_targets.items()]

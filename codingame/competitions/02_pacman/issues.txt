@@ -1,6 +1,8 @@
+- Fix in normal collection only the available pacs should be involved
+
 - Fix the navigation of the available pacs in phase 1
     The available pacs in phase 1 go to 31,12
-    
+
 - Enhacement of normal pallet collection
     The normal pallets should be split to the pac that sees them
     The pac that sees normal pellets should get one side

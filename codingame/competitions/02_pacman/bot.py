@@ -169,7 +169,7 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
-def collect_super_pellets(pacs_mine, targets, width):
+def plan_super_pellets(pacs_mine, targets, width):
     """
     The planning is done the first time and it is updated only if the count of the 
     super pallets is decreased.
@@ -189,7 +189,7 @@ def collect_super_pellets(pacs_mine, targets, width):
     # Create saved deep copies.
     clusters_saved = copy.deepcopy(clusters)
 
-    pac_target = {}
+    pac_targets = {}
 
     for cluster in clusters:
 
@@ -212,7 +212,7 @@ def collect_super_pellets(pacs_mine, targets, width):
         assert selected_target is not None
 
         # Assign the target to the pac.   
-        pac_target[selected_pac['id']] = selected_target
+        pac_targets[selected_pac['id']] = selected_target
 
         # Remove the assigned pac.
         pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
@@ -220,37 +220,54 @@ def collect_super_pellets(pacs_mine, targets, width):
         # Remove the assigned cluster.
         clusters = [x for x in clusters if not x == selected_cluster]
 
-    # The pacs_mine now has the available pacs.
-    return pac_target, pacs_mine
+    return pac_targets
 
 
-def collect_normal_pellets(pacs_mine, targets, width):
+def find_available_pacs(pacs_mine, pac_to_super, pac_to_normal=None):
+    """
+    Finds the available pacs that are not assigned
+    """
+    print(f"pacs_mine     : {pacs_mine}", file=sys.stderr)
+    print(f"pac_to_super  : {pac_to_super}", file=sys.stderr)
+    print(f"pac_to_normal : {pac_to_normal}", file=sys.stderr)
+
+    pac_assigned = pac_to_super if pac_to_normal == None else {**pac_to_super, **pac_to_normal}
+
+    available_pacs = [x for x in pacs_mine if x['id'] not in pac_assigned.keys()]
+
+    print(f"available_pacs: {available_pacs}", file=sys.stderr)
+
+    return available_pacs
+
+
+def plan_normal_pellets(pacs_mine, targets, width):
     """
     Each pac is assgined to the closest available normal pellet
     """
 
     print(f"normal pellets: {targets}", file=sys.stderr)
 
-    pac_target = {}
+    pac_targets = {}
 
     # Assign each pac to the closes normal pellet.
-    for pac in pacs_mine:
-        min_distance = math.inf
-        selected_target = None
-        for target in targets:
-            distance = calc_distance(pac['position'], target, width)
-            if distance < min_distance:
-                min_distance = distance
-                selected_target = target
-        
-        if selected_target is not None:
-            # Assign the target to the pac.   
-            pac_target[pac['id']] = selected_target
+    if pacs_mine is not None:
+        for pac in pacs_mine:
+            min_distance = math.inf
+            selected_target = None
+            for target in targets:
+                distance = calc_distance(pac['position'], target, width)
+                if distance < min_distance:
+                    min_distance = distance
+                    selected_target = target
+            
+            if selected_target is not None:
+                # Assign the target to the pac.   
+                pac_targets[pac['id']] = selected_target
 
-            # Remove the assigned target.
-            targets = [x for x in targets if not x == selected_target]
+                # Remove the assigned target.
+                targets = [x for x in targets if not x == selected_target]
 
-    return pac_target
+    return pac_targets
 
 
 def explore_floor(pacs_mine, unexplored, width):
@@ -311,19 +328,22 @@ def main():
 
         # Pass 1 - Collect super pellets
         pac_to_super = {}
+
         if len(super_pellets) > 0:
-            # A new plan is done only if there is none  or if a super pellet has been disappered in last turn
+            # There is no plan or super pellets have been captured.
             if last_super_pellet_plan == None or len(super_pellets) < last_super_pellet_count:
-                pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'])
+                pac_to_super = plan_super_pellets(pacs_mine, super_pellets, scene['width'])
             else:
-                pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'])
+                pac_to_super = last_super_pellet_plan
 
         # Pass 2 - Collect normal pellets.
         pac_to_normal = {}
-        if available_pacs:
-            pac_to_normal = collect_normal_pellets(pacs_mine, normal_pellets, scene['width'])
+        available_pacs = find_available_pacs(pacs_mine, pac_to_super)
+        pac_to_normal = plan_normal_pellets(available_pacs, normal_pellets, scene['width'])
 
         # TODO only the available pacs should go to explore
+        available_pacs = find_available_pacs(pacs_mine, pac_to_super, pac_to_normal)
+
         # pac_to_explore = {}
 
 
@@ -345,8 +365,7 @@ def main():
 
         # Updates of the cross turn variables.
         last_super_pellet_count = len(super_pellets)
-        if len(super_pellets) > 0:
-            last_super_pellet_plan = pac_to_super
+        last_super_pellet_plan = pac_to_super
 
 # Entry point.
 main()

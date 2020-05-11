@@ -1,7 +1,3 @@
-- Fix the available packs in phase 2 go to only 1 normal pallet and then stop
-    The check of the super pallet count should be done inside the function and not in the main
-    The second pass should not be by-passed
-
 - Enhacement of the super pallet collection
     The allocation is not done optimal
     The alogorithm should be reconsidered

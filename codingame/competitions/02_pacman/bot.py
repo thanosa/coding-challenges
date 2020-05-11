@@ -184,44 +184,45 @@ def assign_targets(pacs_mine, targets, width, unexplored):
     # Pass 1: Assign a pac to each cluster.
     #
 
-    # Create saved deep copies.
-    clusters_saved = copy.deepcopy(clusters)
-    pacs_mine_saved = copy.deepcopy(pacs_mine)
+    # We do a plan if we don't have one or if a super pellet has been disappered.
+    if PREVIOUS_SUPER_PELLET_PLAN == None or len(targets) < PREVIOUS_SUPER_PELLET_COUNT:
+        # Create saved deep copies.
+        clusters_saved = copy.deepcopy(clusters)
 
-    pac_target = {}
+        pac_target = {}
 
-    for cluster in clusters:
+        for cluster in clusters:
 
-        min_distance = math.inf
-        selected_pac = None
-        selected_cluster = None
-        selected_target = None
+            min_distance = math.inf
+            selected_pac = None
+            selected_cluster = None
+            selected_target = None
 
-        for target in cluster:
-            for pac in pacs_mine:
-                distance = calc_distance(pac['position'], target, width)
-                if distance < min_distance:
-                    min_distance = distance
-                    selected_pac = pac
-                    selected_cluster = cluster
-                    selected_target = target
+            for target in cluster:
+                for pac in pacs_mine:
+                    distance = calc_distance(pac['position'], target, width)
+                    if distance < min_distance:
+                        min_distance = distance
+                        selected_pac = pac
+                        selected_cluster = cluster
+                        selected_target = target
 
-        assert selected_pac is not None
-        assert selected_cluster is not None
-        assert selected_target is not None
+            assert selected_pac is not None
+            assert selected_cluster is not None
+            assert selected_target is not None
 
-        # Assign the target to the pac.   
-        pac_target[selected_pac['id']] = selected_target
+            # Assign the target to the pac.   
+            pac_target[selected_pac['id']] = selected_target
 
-        # Remove the assigned pac.
-        pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
+            # Remove the assigned pac.
+            pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
 
-        # Remove the assigned cluster.
-        clusters = [x for x in clusters if not x == selected_cluster]
+            # Remove the assigned cluster.
+            clusters = [x for x in clusters if not x == selected_cluster]
 
 
     #
-    # Pass 2: If there are available pac we assign them the most distant target.
+    # Pass 2: If there are available pacs we assign them the most distant target.
     #
 
     # Checks if there are available pacs.

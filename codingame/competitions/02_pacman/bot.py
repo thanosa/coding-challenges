@@ -323,20 +323,21 @@ def main():
         # Pass 1 - Collect super pellets
         pac_to_super = {}
         if len(super_pellets) > 0:
-            pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'], unexplored)
+            pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'])
 
         # Pass 2 - Collect normal pellets.
         pac_to_normal = {}
         if available_pacs:
-            pac_to_normal = collect_normal_pellets(pacs_mine, normal_pellets, unexplored, scene['width'])
+            pac_to_normal = collect_normal_pellets(pacs_mine, normal_pellets, scene['width'])
 
         # TODO only the available pacs should go to explore
         # pac_to_explore = {}
 
 
         # Merge the pac targets.
+        print(f"pac targets super : {pac_to_super}", file=sys.stderr)
+        print(f"pac targets normal: {pac_to_normal}", file=sys.stderr)
         pac_targets = {**pac_to_super, **pac_to_normal}
-        print(f"pac targets: {pac_targets}", file=sys.stderr)
 
         # Command generation.
         moves = [f"MOVE {pac} {target[0]} {target[1]} ({target[0]},{target[1]})" for pac, target in pac_targets.items()]

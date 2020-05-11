@@ -184,46 +184,42 @@ def collect_super_pellets(pacs_mine, targets, width):
     clusters = calc_clusters(targets, len(pacs_mine), width)
     assert len(pacs_mine) >= len(clusters)
 
-    # A new plan is done only if there is none 
-    # or if a super pellet has been disappered in last turn
-    if PREVIOUS_SUPER_PELLET_PLAN == None or len(targets) < PREVIOUS_SUPER_PELLET_COUNT:
-
-        # Assign a pac to each cluster.
-        
-        # Create saved deep copies.
-        clusters_saved = copy.deepcopy(clusters)
-
-        pac_target = {}
-
-        for cluster in clusters:
-
-            min_distance = math.inf
-            selected_pac = None
-            selected_cluster = None
-            selected_target = None
-
-            for target in cluster:
-                for pac in pacs_mine:
-                    distance = calc_distance(pac['position'], target, width)
-                    if distance < min_distance:
-                        min_distance = distance
-                        selected_pac = pac
-                        selected_cluster = cluster
-                        selected_target = target
-
-            assert selected_pac is not None
-            assert selected_cluster is not None
-            assert selected_target is not None
-
-            # Assign the target to the pac.   
-            pac_target[selected_pac['id']] = selected_target
-
-            # Remove the assigned pac.
-            pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
-
-            # Remove the assigned cluster.
-            clusters = [x for x in clusters if not x == selected_cluster]
+    # Assign a pac to each cluster.
     
+    # Create saved deep copies.
+    clusters_saved = copy.deepcopy(clusters)
+
+    pac_target = {}
+
+    for cluster in clusters:
+
+        min_distance = math.inf
+        selected_pac = None
+        selected_cluster = None
+        selected_target = None
+
+        for target in cluster:
+            for pac in pacs_mine:
+                distance = calc_distance(pac['position'], target, width)
+                if distance < min_distance:
+                    min_distance = distance
+                    selected_pac = pac
+                    selected_cluster = cluster
+                    selected_target = target
+
+        assert selected_pac is not None
+        assert selected_cluster is not None
+        assert selected_target is not None
+
+        # Assign the target to the pac.   
+        pac_target[selected_pac['id']] = selected_target
+
+        # Remove the assigned pac.
+        pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
+
+        # Remove the assigned cluster.
+        clusters = [x for x in clusters if not x == selected_cluster]
+
     # The pacs_mine now has the available pacs.
     return pac_target, pacs_mine
 
@@ -285,11 +281,6 @@ def explore_floor(pacs_mine, unexplored, width):
     return pac_target
 
 
-# Cross turn planning varibles
-PREVIOUS_SUPER_PELLET_COUNT = None
-PREVIOUS_SUPER_PELLET_PLAN = None
-
-
 def main():
 
     # Read the scene.
@@ -299,10 +290,8 @@ def main():
     unexplored = copy.deepcopy(floor)
 
     # Initialize the cross turn variables.
-    if 'PREVIOUS_SUPER_PELLET_COUNT' is not globals():
-        PREVIOUS_SUPER_PELLET_COUNT = -1
-    if 'PREVIOUS_SUPER_PELLET_PLAN' is not globals():
-        PREVIOUS_SUPER_PELLET_PLAN = None
+    last_super_pellet_count = -1
+    last_super_pellet_plan = None
 
     # Game loop.
     turn = 0
@@ -323,7 +312,11 @@ def main():
         # Pass 1 - Collect super pellets
         pac_to_super = {}
         if len(super_pellets) > 0:
-            pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'])
+            # A new plan is done only if there is none  or if a super pellet has been disappered in last turn
+            if last_super_pellet_plan == None or len(super_pellets) < last_super_pellet_count:
+                pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'])
+            else:
+                pac_to_super, available_pacs = collect_super_pellets(pacs_mine, super_pellets, scene['width'])
 
         # Pass 2 - Collect normal pellets.
         pac_to_normal = {}
@@ -351,9 +344,9 @@ def main():
         turn += 1
 
         # Updates of the cross turn variables.
-        PREVIOUS_SUPER_PELLET_COUNT = len(super_pellets)
+        last_super_pellet_count = len(super_pellets)
         if len(super_pellets) > 0:
-            PREVIOUS_SUPER_PELLET_PLAN = pac_to_super
+            last_super_pellet_plan = pac_to_super
 
 # Entry point.
 main()

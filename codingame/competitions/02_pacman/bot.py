@@ -169,11 +169,15 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
-def assign_targets(pacs_mine, targets, clusters, width, unexplored):
+def assign_targets(pacs_mine, targets, width, unexplored):
     """
     Assign each cluster to the closest pac based on distance.
     """
 
+    #
+    # Preparation: Cluster the super pellets.
+    #
+    clusters = calc_clusters(targets, len(pacs_mine), width)
     assert len(pacs_mine) >= len(clusters)
 
     #
@@ -241,47 +245,50 @@ def assign_targets(pacs_mine, targets, clusters, width, unexplored):
 
 
 def collect_normal_pellets(pacs_mine, targets, unexplored, width):
-
+    print(f"targets: {targets}", file=sys.stderr)
     targets_save = copy.deepcopy(targets)
 
     pac_target = {}
 
-    if len(targets) > 0:
-        for pac in pacs_mine:
-            min_distance = math.inf
-            selected_target = None
-            for target in targets:
-                distance = calc_distance(pac['position'], target, width)
-                if distance < min_distance:
-                    min_distance = distance
-                    selected_target = target
-            
-            assert selected_target is not None
-
+    for pac in pacs_mine:
+        min_distance = math.inf
+        selected_target = None
+        for target in targets:
+            distance = calc_distance(pac['position'], target, width)
+            print(f"pac: {pac['id']}", file=sys.stderr)
+            print(f"target: {target}", file=sys.stderr)
+            print(f"distance: {distance}", file=sys.stderr)
+            print(f"min_distance: {min_distance}", file=sys.stderr)
+            if distance < min_distance:
+                min_distance = distance
+                selected_target = target
+        
+        if selected_target is not None:
             # Assign the target to the pac.   
             pac_target[pac['id']] = selected_target
 
             # Remove the assigned target.
             targets = [x for x in targets if not x == selected_target]
     
-    elif len(unexplored) > 0:
-        targets = unexplored
-        for pac in pacs_mine:
-            min_distance = math.inf
-            selected_target = None
-            for target in targets:
-                distance = calc_distance(pac['position'], target, width)
-                if distance < min_distance:
-                    min_distance = distance
-                    selected_target = target
+    if len(pac_target) < len(pacs_mine):
+        if len(unexplored) > 0:
+            targets = unexplored
+            for pac in pacs_mine:
+                min_distance = math.inf
+                selected_target = None
+                for target in targets:
+                    distance = calc_distance(pac['position'], target, width)
+                    if distance < min_distance:
+                        min_distance = distance
+                        selected_target = target
 
-            assert selected_target is not None
+                assert selected_target is not None
 
-            # Assign the target to the pac.   
-            pac_target[pac['id']] = selected_target
+                # Assign the target to the pac.   
+                pac_target[pac['id']] = selected_target
 
-            # Remove the assigned target.
-            targets = [x for x in targets if not x == selected_target]
+                # Remove the assigned target.
+                targets = [x for x in targets if not x == selected_target]
 
     return pac_target
 
@@ -325,22 +332,17 @@ def main():
 
         # Phase 1 - Super pellets
         if len(super_pellets) > 0:
-            
-            # We create a super pellet plan only if a super pellet has been disappeared.
-            if PREVIOUS_SUPER_PELLET_PLAN == None or len(super_pellets) < PREVIOUS_SUPER_PELLET_COUNT:
-                # Cluster the super pellets.
-                super_pellets_clusters = calc_clusters(super_pellets, len(pacs_mine), scene['width'])
 
-                # Assign a cluster to each pac.
-                pac_targets = assign_targets(pacs_mine, super_pellets, super_pellets_clusters, scene['width'], unexplored)
-            else:
-                pac_targets = PREVIOUS_SUPER_PELLET_PLAN
+            # Assign a cluster to each pac.
+            pac_targets = assign_targets(pacs_mine, super_pellets, scene['width'], unexplored)
+
 
 
         # Phase 2 - Normal pellets
         else:
 
             # Collect the normal pellets
+            print(f"normal pellets: {normal_pellets}", file=sys.stderr)
             pac_targets = collect_normal_pellets(pacs_mine, normal_pellets, unexplored, scene['width'])
 
 

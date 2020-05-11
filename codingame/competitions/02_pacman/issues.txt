@@ -1,11 +1,10 @@
-- Fix of the super pellet collection
-    The super pellet planning should be recalculated only if the super pellet count changes
-    This is because there are cases where the pacs have to move away frmo their assigned targets to reach them,
-    which might cause another pac to come closer to the other's pac super pellet.
+- Fix the available packs in phase 2 go to only 1 normal pallet and then stop
+    The check of the super pallet count should be done inside the function and not in the main
+    The second pass should not be by-passed
 
 - Enhacement of the super pallet collection
-    Our packs stop once the collect their first super pallet
-    They should move directly to the next supper pallet
+    The allocation is not done optimal
+    The alogorithm should be reconsidered
 
 - Enhancement of the distance heuristic accuracy
 	The wrapped distance should not be horizontal but take the loop-holes into consideration

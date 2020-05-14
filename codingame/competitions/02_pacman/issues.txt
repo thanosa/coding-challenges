@@ -10,10 +10,6 @@
     The allocation is not done optimal
     The alogorithm should be reconsidered
 
-- Enhancement of the distance heuristic accuracy
-	The wrapped distance should not be horizontal but take the loop-holes into consideration
-	The loop-holes are identified by their y
-
 - Enhancement of cases with collisions with FRIENDS
 	When our pacs collide they 
         If they target the same square 

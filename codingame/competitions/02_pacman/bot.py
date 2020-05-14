@@ -39,12 +39,11 @@ def read_pacs():
     """
     Read the pacs information.
     """
+
+    pacs = {'mine': [], 'their': []}
+    
     # Count the pacs
     pac_count = int(input()) 
-
-    # Read the pacs
-    pacs_mine = []
-    pacs_their = []
 
     for _ in range(pac_count):
         pac_id, mine, x, y, type_id, speed_turns_left, ability_cooldown = input().split()
@@ -58,11 +57,11 @@ def read_pacs():
         }
 
         if mine == "1":
-            pacs_mine.append(new_pac)
+            pacs['mine'].append(new_pac)
         else:
-            pacs_their.append(new_pac)
+            pacs['their'].append(new_pac)
 
-    return pacs_mine, pacs_their
+    return pacs
 
 
 def read_pellets():
@@ -84,12 +83,12 @@ def read_pellets():
     return pellet_count, super_pellets, normal_pellets
 
 
-def update_unexplored(scene, pacs_mine, pacs_their):
+def update_unexplored(scene, pacs):
     """
     Updates the floor by eliminating the visited floor positions by any pac.
     """
     # Current positions of all pacs.
-    pac_positions = [x['position'] for x in pacs_mine + pacs_their]
+    pac_positions = [x['position'] for x in pacs['mine'] + pacs['their']]
 
     # Remove the current pac positions from the floor.
     scene['unexplored'] = [x for x in scene['unexplored'] if x not in pac_positions]
@@ -175,7 +174,7 @@ def calc_clusters(targets, pac_count, scene):
     return clusters
 
 
-def collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene):
+def collect_super_pellets(pacs, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene):
     """
     Collects the super pellets as first priority
     """
@@ -186,7 +185,7 @@ def collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last
         super_pellets_decreased = len(super_pellets) < last_super_pellet_count
 
         if there_is_no_super_pellet_plan or super_pellets_decreased:
-            return plan_super_pellets(pacs_mine, super_pellets, scene)
+            return plan_super_pellets(pacs['mine'], super_pellets, scene)
         else:
             return last_super_pellet_plan
     
@@ -245,18 +244,18 @@ def plan_super_pellets(pacs_mine, targets, scene):
     return pac_targets
 
 
-def find_available_pacs(pacs_mine, pac_to_super, pac_to_normal=None):
+def find_available_pacs(pacs, pac_to_super, pac_to_normal=None):
     """
     Finds the available pacs that are not assigned
     """
-    print(f"pacs_mine     : {pacs_mine}", file=sys.stderr)
+    print(f"pacs_mine     : {pacs['mine']}", file=sys.stderr)
     print(f"pac_to_super  : {pac_to_super}", file=sys.stderr)
     print(f"pac_to_normal : {pac_to_normal}", file=sys.stderr)
 
-    available_pacs = pacs_mine
+    available_pacs = pacs['mine']
 
     if pac_to_super is not None:
-        available_pacs = [x for x in pacs_mine if x['id'] not in pac_to_super.keys()]
+        available_pacs = [x for x in pacs['mine'] if x['id'] not in pac_to_super.keys()]
 
     if pac_to_normal is not None:
         available_pacs = [x for x in available_pacs if x['id'] not in pac_to_normal.keys()]
@@ -296,12 +295,14 @@ def plan_normal_pellets(pacs_mine, targets, scene):
     return pac_targets
 
 
-def explore_floor(pacs_mine, unexplored, scene):
+def explore_floor(pacs_mine, scene):
     """
     The pacs are sent the most distant floor of the unexplored area.
     """
     pac_target = {}
     
+    unexplored = scene['unexplored']
+
     if len(unexplored) > 0:
         targets = unexplored
         for pac in pacs_mine:
@@ -360,26 +361,27 @@ def main():
     while True:
 
         # Read score.
-        my_score, opponent_score = [int(i) for i in input().split()]
+        score = {}
+        score['mine'], score['their'] = [int(i) for i in input().split()]
 
         # Read pacs.
-        pacs_mine, pacs_their = read_pacs()
+        pacs = read_pacs()
 
         # Update the unexplored floor.
-        scene = update_unexplored(scene, pacs_mine, pacs_their)
+        scene = update_unexplored(scene, pacs)
 
         # Read pellets.
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
         # Pass 1 - Collect super pellets
-        pac_to_super = collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene)
+        pac_to_super = collect_super_pellets(pacs, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene)
 
         # Pass 2 - Collect normal pellets.
-        available_pacs = find_available_pacs(pacs_mine, pac_to_super)
+        available_pacs = find_available_pacs(pacs, pac_to_super)
         pac_to_normal = plan_normal_pellets(available_pacs, normal_pellets, scene)
 
         # Pass 3 - Exploration of the unexplored floor.
-        available_pacs = find_available_pacs(pacs_mine, pac_to_super, pac_to_normal)
+        available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_normal)
         pac_to_explore = {}
 
         # Merge the pac targets.
@@ -390,7 +392,7 @@ def main():
 
         # Command generation.
         moves = [f"MOVE {pac} {target[0]} {target[1]} ({target[0]},{target[1]})" for pac, target in pac_targets.items()]
-        speeds = [f"SPEED {pac['id']}" for pac in pacs_mine]
+        speeds = [f"SPEED {pac['id']}" for pac in pacs['mine']]
        
         # Turn handler.
         if turn % 10 == 0:

@@ -29,6 +29,9 @@ def read_scene():
         if row[0] == row[-1] == FLOOR:
             scene['loops'].append(y)
 
+    # Collection of all unexplored floor positions.
+    scene['unexplored'] = copy.deepcopy(scene['floor'])
+
     return scene
 
 
@@ -81,21 +84,20 @@ def read_pellets():
     return pellet_count, super_pellets, normal_pellets
 
 
-def update_unexplored_floor(floor, pacs_mine, pacs_their):
+def update_unexplored(scene, pacs_mine, pacs_their):
     """
     Updates the floor by eliminating the visited floor positions by any pac.
     """
-
     # Current positions of all pacs.
     pac_positions = [x['position'] for x in pacs_mine + pacs_their]
 
     # Remove the current pac positions from the floor.
-    floor = [x for x in floor if x not in pac_positions]
+    scene['unexplored'] = [x for x in scene['unexplored'] if x not in pac_positions]
 
-    return floor
+    return scene
 
 
-def calc_distance(point1, point2, width):
+def calc_distance(point1, point2, scene):
     """
     Heuristic function to calculate the distance between two targets.
     It is based on the Manhattan distance.
@@ -104,12 +106,12 @@ def calc_distance(point1, point2, width):
     x_distance = abs(point1[0] - point2[0])
     y_distance = abs(point1[1] - point2[1])
     direct = x_distance + y_distance
-    indirect = width - x_distance + y_distance + 1
+    indirect = scene['width'] - x_distance + y_distance + 1
 
     return min(direct, indirect)
 
 
-def calc_p2t_distances(pacs, targets, width):
+def calc_p2t_distances(pacs, targets, scene):
     """
     Calculates the pac to target distances.
     Currently not used.
@@ -118,21 +120,21 @@ def calc_p2t_distances(pacs, targets, width):
     for pac in pacs:
         distances = []
         for target in targets:
-            distance = calc_distance(pac['position'], target, width)
+            distance = calc_distance(pac['position'], target, scene)
             distances.append({target: distance})
         all_distances.append({'pac_id': pac['id'], 'distances': distances})
 
     return all_distances
 
 
-def calc_t2t_distances(targets, width):
+def calc_t2t_distances(targets, scene):
     """
     Calculates the target to target distances.
     """
     distances_set = set()
     distances_dict = {}
     for t1, t2 in itertools.combinations(targets, 2):
-        distance = calc_distance(t1, t2, width)
+        distance = calc_distance(t1, t2, scene)
         distances_set.add(distance)
         distances_dict[(t1, t2)] = distance
     
@@ -141,7 +143,7 @@ def calc_t2t_distances(targets, width):
     return distances_sorted_set, distances_dict
 
 
-def calc_clusters(targets, pac_count, width):
+def calc_clusters(targets, pac_count, scene):
     """
     The number of clusters should not be more than my pacs.
     """
@@ -152,7 +154,7 @@ def calc_clusters(targets, pac_count, width):
         print(f"pac, clusters count: {pac_count}, {len(clusters)}", file=sys.stderr)
         
         # Calculate the super pellet to super pellet distances.
-        distances_set, distances_dict = calc_t2t_distances(targets, width)
+        distances_set, distances_dict = calc_t2t_distances(targets, scene)
 
         print(f"unique distances: {distances_set}", file=sys.stderr)
         for d in distances_dict.items():
@@ -173,7 +175,7 @@ def calc_clusters(targets, pac_count, width):
     return clusters
 
 
-def collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, width):
+def collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene):
     """
     Collects the super pellets as first priority
     """
@@ -184,12 +186,12 @@ def collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last
         super_pellets_decreased = len(super_pellets) < last_super_pellet_count
 
         if there_is_no_super_pellet_plan or super_pellets_decreased:
-            return plan_super_pellets(pacs_mine, super_pellets, width)
+            return plan_super_pellets(pacs_mine, super_pellets, scene)
         else:
             return last_super_pellet_plan
     
 
-def plan_super_pellets(pacs_mine, targets, width):
+def plan_super_pellets(pacs_mine, targets, scene):
     """
     The planning is done the first time and it is updated only if the count of the 
     super pallets is decreased.
@@ -201,7 +203,7 @@ def plan_super_pellets(pacs_mine, targets, width):
     """
 
     # Preparation: Cluster the super pellets.
-    clusters = calc_clusters(targets, len(pacs_mine), width)
+    clusters = calc_clusters(targets, len(pacs_mine), scene)
     assert len(pacs_mine) >= len(clusters)
 
     # Assign a pac to each cluster.
@@ -220,7 +222,7 @@ def plan_super_pellets(pacs_mine, targets, width):
 
         for target in cluster:
             for pac in pacs_mine:
-                distance = calc_distance(pac['position'], target, width)
+                distance = calc_distance(pac['position'], target, scene)
                 if distance < min_distance:
                     min_distance = distance
                     selected_pac = pac
@@ -264,7 +266,7 @@ def find_available_pacs(pacs_mine, pac_to_super, pac_to_normal=None):
     return available_pacs
 
 
-def plan_normal_pellets(pacs_mine, targets, width):
+def plan_normal_pellets(pacs_mine, targets, scene):
     """
     Each pac is assgined to the closest available normal pellet
     """
@@ -279,7 +281,7 @@ def plan_normal_pellets(pacs_mine, targets, width):
             min_distance = math.inf
             selected_target = None
             for target in targets:
-                distance = calc_distance(pac['position'], target, width)
+                distance = calc_distance(pac['position'], target, scene)
                 if distance < min_distance:
                     min_distance = distance
                     selected_target = target
@@ -294,7 +296,7 @@ def plan_normal_pellets(pacs_mine, targets, width):
     return pac_targets
 
 
-def explore_floor(pacs_mine, unexplored, width):
+def explore_floor(pacs_mine, unexplored, scene):
     """
     The pacs are sent the most distant floor of the unexplored area.
     """
@@ -306,7 +308,7 @@ def explore_floor(pacs_mine, unexplored, width):
             min_distance = math.inf
             selected_target = None
             for target in targets:
-                distance = calc_distance(pac['position'], target, width)
+                distance = calc_distance(pac['position'], target, scene)
                 if distance < min_distance:
                     min_distance = distance
                     selected_target = target
@@ -349,9 +351,6 @@ def main():
     print(f"floor: {scene['floor']}", file=sys.stderr)
     print(f"loops: {scene['loops']}", file=sys.stderr)
 
-    # Collection of all unexplored floor positions.
-    unexplored = copy.deepcopy(scene['floor'])
-
     # Initialize the cross turn variables.
     last_super_pellet_count = -1
     last_super_pellet_plan = None
@@ -367,17 +366,17 @@ def main():
         pacs_mine, pacs_their = read_pacs()
 
         # Update the unexplored floor.
-        unexplored = update_unexplored_floor(unexplored, pacs_mine, pacs_their)
+        scene = update_unexplored(scene, pacs_mine, pacs_their)
 
         # Read pellets.
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
         # Pass 1 - Collect super pellets
-        pac_to_super = collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene['width'])
+        pac_to_super = collect_super_pellets(pacs_mine, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene)
 
         # Pass 2 - Collect normal pellets.
         available_pacs = find_available_pacs(pacs_mine, pac_to_super)
-        pac_to_normal = plan_normal_pellets(available_pacs, normal_pellets, scene['width'])
+        pac_to_normal = plan_normal_pellets(available_pacs, normal_pellets, scene)
 
         # Pass 3 - Exploration of the unexplored floor.
         available_pacs = find_available_pacs(pacs_mine, pac_to_super, pac_to_normal)

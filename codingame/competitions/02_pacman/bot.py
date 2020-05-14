@@ -18,14 +18,21 @@ def read_scene():
     width, height = [int(i) for i in input().split()]
     scene_dict = {'width': width, 'height': height, 'rows': []}
 
+    
+    loopholes = []
     floor = []
     for y in range(height):
         row = input()
         scene_dict['rows'].append(row)
 
+        # Find the floor.
         floor.extend([(x, y) for x, c in enumerate(row) if c == FLOOR])
 
-    return scene_dict, floor
+        # Find the loopholes.
+        if row[0] == row[-1] == FLOOR:
+            loopholes.append(y)
+
+    return scene_dict, floor, loopholes
 
 
 def read_pacs():
@@ -339,7 +346,11 @@ def merge_targets(pac_to_super, pac_to_normal, pac_to_explore):
 def main():
 
     # Read the scene.
-    scene, floor = read_scene() 
+    scene, floor, loopholes = read_scene()
+    for row in scene['rows']:
+        print(f"scene: {row}", file=sys.stderr)
+    print(f"floor: {floor}", file=sys.stderr)
+    print(f"loopholes: {loopholes}", file=sys.stderr)
 
     # Collection of all unexplored floor positions.
     unexplored = copy.deepcopy(floor)

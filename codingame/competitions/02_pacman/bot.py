@@ -16,23 +16,20 @@ def read_scene():
     The top left corner is the (x=0, y=0)
     """
     width, height = [int(i) for i in input().split()]
-    scene_dict = {'width': width, 'height': height, 'rows': []}
+    scene = {'width': width, 'height': height, 'rows': [], 'floor': [], 'loops': []}
 
-    
-    loopholes = []
-    floor = []
     for y in range(height):
         row = input()
-        scene_dict['rows'].append(row)
+        scene['rows'].append(row)
 
         # Find the floor.
-        floor.extend([(x, y) for x, c in enumerate(row) if c == FLOOR])
+        scene['floor'].extend([(x, y) for x, c in enumerate(row) if c == FLOOR])
 
         # Find the loopholes.
         if row[0] == row[-1] == FLOOR:
-            loopholes.append(y)
+            scene['loops'].append(y)
 
-    return scene_dict, floor, loopholes
+    return scene
 
 
 def read_pacs():
@@ -346,14 +343,14 @@ def merge_targets(pac_to_super, pac_to_normal, pac_to_explore):
 def main():
 
     # Read the scene.
-    scene, floor, loopholes = read_scene()
+    scene = read_scene()
     for row in scene['rows']:
         print(f"scene: {row}", file=sys.stderr)
-    print(f"floor: {floor}", file=sys.stderr)
-    print(f"loopholes: {loopholes}", file=sys.stderr)
+    print(f"floor: {scene['floor']}", file=sys.stderr)
+    print(f"loops: {scene['loops']}", file=sys.stderr)
 
     # Collection of all unexplored floor positions.
-    unexplored = copy.deepcopy(floor)
+    unexplored = copy.deepcopy(scene['floor'])
 
     # Initialize the cross turn variables.
     last_super_pellet_count = -1

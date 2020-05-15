@@ -407,7 +407,7 @@ def main():
 
         # Pass 3 - Exploration of the unexplored floor.
         available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_normal)
-        pac_to_explore = {}
+        pac_to_explore = explore_floor(available_pacs, scene)
 
         # Merge the pac targets.
         print(f"pac to super  : {pac_to_super}", file=sys.stderr)

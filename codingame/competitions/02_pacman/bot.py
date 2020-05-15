@@ -100,12 +100,33 @@ def calc_distance(point1, point2, scene):
     """
     Heuristic function to calculate the distance between two targets.
     It is based on the Manhattan distance.
-    It is refined to consider the wrap of the scene.
+    It is refined to consider the wrap of the scene with the indirect.
+    For each of the two points we find the loop that will be used in case of wrap.
+    This is the one that has the closest y.
+    The vertical distance is the sum of vertical distances of each of the point with the loop 
     """
-    x_distance = abs(point1[0] - point2[0])
-    y_distance = abs(point1[1] - point2[1])
-    direct = x_distance + y_distance
-    indirect = scene['width'] - x_distance + y_distance + 1
+    dx = abs(point1[0] - point2[0])
+    dy = abs(point1[1] - point2[1])
+    direct = dx + dy
+
+    if scene['loops'] is not None:
+        horizontal = scene['width'] - dx
+
+        min_distances = []
+        for point in [point1, point2]:
+            min_dy = math.inf
+            for loop_y in scene['loops']:
+                dy = abs(point[1] - loop_y)
+                if dy < min_dy:
+                    min_dy = dy
+                    closest_loop = loop_y
+            min_distances.append(min_dy)
+        assert len(min_distances) == 2
+
+        vertical = sum(min_distances) 
+        indirect = horizontal + vertical
+    else:
+        indicect = math.inf
 
     return min(direct, indirect)
 
@@ -347,10 +368,6 @@ def main():
 
     # Read the scene.
     scene = read_scene()
-    for row in scene['rows']:
-        print(f"scene: {row}", file=sys.stderr)
-    print(f"floor: {scene['floor']}", file=sys.stderr)
-    print(f"loops: {scene['loops']}", file=sys.stderr)
 
     # Initialize the cross turn variables.
     last_super_pellet_count = -1

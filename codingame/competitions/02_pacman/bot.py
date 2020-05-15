@@ -170,6 +170,8 @@ def calc_clusters(targets, pac_count, scene):
     # Initialize the clusters as one-to-one with the targets.
     clusters = [[x] for x in targets]
 
+    print(f"target: {len(targets)}, pacs: {pac_count}", file=sys.stderr)
+
     if len(clusters) > pac_count:
         print(f"pac, clusters count: {pac_count}, {len(clusters)}", file=sys.stderr)
         
@@ -192,6 +194,8 @@ def calc_clusters(targets, pac_count, scene):
             clusters = [x for x in clusters if (x[0] != pair_to_join[0]) and (x[0] != pair_to_join[1])]
             clusters.append([x for x in pair_to_join])
     
+    print(f"clusters: {clusters}", file=sys.stderr)
+
     return clusters
 
 
@@ -206,8 +210,10 @@ def collect_super_pellets(pacs, super_pellets, last_super_pellet_plan, last_supe
         super_pellets_decreased = len(super_pellets) < last_super_pellet_count
 
         if there_is_no_super_pellet_plan or super_pellets_decreased:
+            print("collect super pellet - NEW PLAN", file=sys.stderr)
             return plan_super_pellets(pacs['mine'], super_pellets, scene)
         else:
+            print("collect super pellet - USE LAST", file=sys.stderr)
             return last_super_pellet_plan
     
 
@@ -269,7 +275,9 @@ def find_available_pacs(pacs, pac_to_super, pac_to_normal=None):
     """
     Finds the available pacs that are not assigned
     """
-    print(f"pacs_mine     : {pacs['mine']}", file=sys.stderr)
+    
+    for pac in pacs['mine']:
+        print(f"pac mine: {pac}", file=sys.stderr)
     print(f"pac_to_super  : {pac_to_super}", file=sys.stderr)
     print(f"pac_to_normal : {pac_to_normal}", file=sys.stderr)
 
@@ -353,8 +361,8 @@ def merge_targets(pac_to_super, pac_to_normal, pac_to_explore):
     pac_targets = {}
 
     if pac_to_super is not None:
-        pac_targets = pac_to_super
-    
+        pac_targets = copy.deepcopy(pac_to_super)
+
     if pac_to_normal is not None:
         pac_targets.update(pac_to_normal)
 
@@ -402,9 +410,9 @@ def main():
         pac_to_explore = {}
 
         # Merge the pac targets.
-        print(f"pac targets super  : {pac_to_super}", file=sys.stderr)
-        print(f"pac targets normal : {pac_to_normal}", file=sys.stderr)
-        print(f"pac targets explore: {pac_to_explore}", file=sys.stderr)
+        print(f"pac to super  : {pac_to_super}", file=sys.stderr)
+        print(f"pac to normal : {pac_to_normal}", file=sys.stderr)
+        print(f"pac to explore: {pac_to_explore}", file=sys.stderr)
         pac_targets = merge_targets(pac_to_super, pac_to_normal, pac_to_explore)
 
         # Command generation.

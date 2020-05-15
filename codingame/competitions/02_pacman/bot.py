@@ -199,22 +199,22 @@ def calc_clusters(targets, pac_count, scene):
     return clusters
 
 
-def collect_super_pellets(pacs, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene):
+def collect_super_pellets(pacs, super_pellets, last, scene):
     """
     Collects the super pellets as first priority
     """
 
     if len(super_pellets) > 0:
         # There is no plan or super pellets have been captured.
-        there_is_no_super_pellet_plan = last_super_pellet_plan == None
-        super_pellets_decreased = len(super_pellets) < last_super_pellet_count
+        there_is_no_super_pellet_plan = last['super_pellet_plan'] == None
+        super_pellets_decreased = len(super_pellets) < last['super_pellet_count']
 
         if there_is_no_super_pellet_plan or super_pellets_decreased:
             print("collect super pellet - NEW PLAN", file=sys.stderr)
             return plan_super_pellets(pacs['mine'], super_pellets, scene)
         else:
             print("collect super pellet - USE LAST", file=sys.stderr)
-            return last_super_pellet_plan
+            return last['super_pellet_plan']
     
 
 def plan_super_pellets(pacs_mine, targets, scene):
@@ -378,8 +378,7 @@ def main():
     scene = read_scene()
 
     # Initialize the cross turn variables.
-    last_super_pellet_count = -1
-    last_super_pellet_plan = None
+    last = {'super_pellet_count': -1, 'super_pellet_plan': None}
 
     # Game loop.
     turn = 0
@@ -399,7 +398,7 @@ def main():
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
         # Pass 1 - Collect super pellets
-        pac_to_super = collect_super_pellets(pacs, super_pellets, last_super_pellet_plan, last_super_pellet_count, scene)
+        pac_to_super = collect_super_pellets(pacs, super_pellets, last, scene)
 
         # Pass 2 - Collect normal pellets.
         available_pacs = find_available_pacs(pacs, pac_to_super)
@@ -427,8 +426,8 @@ def main():
         turn += 1
 
         # Updates of the cross turn variables.
-        last_super_pellet_count = len(super_pellets)
-        last_super_pellet_plan = pac_to_super
+        last['super_pellet_count'] = len(super_pellets)
+        last['super_pellet_plan'] = pac_to_super
 
 # Entry point.
 main()

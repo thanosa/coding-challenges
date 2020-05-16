@@ -46,6 +46,50 @@ def get_neighbors(point, direction=None) -> {}:
         return neighbors[direction]
 
 
+def pacs_see_each_other(pac1, pac2, pacs, scene) -> bool:
+    """
+    Checks if two points are visible.
+    """
+    my_pac_positions = {x['position'] for x in pacs['mine']}
+    their_pac_positions = {x['position'] for x in pacs['their']}
+    obstacles = scene['wall'] | my_pac_positions | their_pac_positions
+
+    horizontal = pac1[0] == pac2[0]
+    vertical = pac1[1] == pac2[1]
+
+    # The are not in the same row or column.
+    if not horizontal and not vertical:
+        return False
+    elif horizontal:
+        y = pac1[1]
+        min_x = min(pac1[0], pac2[0])
+        max_x = max(pac1[0], pac2[0])
+
+        # They are next to each other.
+        if abs(min_x - max_x) == 1:
+            return True
+        else:
+            # Check if any intermediate point is wall or a pac.
+            for x in range(min_x + 1, max_x):
+                if (x, y) in obstacles:
+                    return False
+            return True
+    elif vertical:
+        x = pac1[0]
+        min_y = min(pac1[1], pac2[1])
+        max_y = max(pac1[1], pac2[1])
+
+        # They are next to each other.
+        if abs(min_y - max_y) == 1:
+            return True
+        else:
+            # Check if any intermediate point is wall or a pac.
+            for x in range(min_y + 1, max_y):
+                if (x, y) in obstacles:
+                    return False
+            return True
+
+
 def read_scene():
     """
     Reads the scene.
@@ -554,6 +598,33 @@ def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal):
     return pac_targets
 
 
+def generate_execute_commands(pacs, pac_targets, scene):
+    """
+    Generate and execute the commands.
+    Each time there the switch is available we change if there is any visible enemy.
+    If there is we switch, speed and target them.
+    """
+    commands = []
+    for pac in pacs['mine']:
+        pr("pac", pac)
+        
+        if pac['speed_turns_left'] == 0:
+            if len(pacs['their']) == 0:
+                commands.append(f"SPEED {pac['id']} SPEED")
+            else:
+                for enemy in pacs['their']:
+                    if pacs_see_each_other(pac['position'], enemy['position'], pacs, scene):
+                        pass
+
+                commands.append(f"SPEED {pac['id']} SPEED")
+        else:
+            target = pac_targets[pac['id']]
+            commands.append(f"MOVE {pac['id']} {target[0]} {target[1]} ({target[0]},{target[1]})")
+
+    # Execute the commands
+    print("  |  ".join(commands))
+
+
 def main():
 
     # Read the scene.
@@ -600,34 +671,14 @@ def main():
         pac_to_normal = collect_normal_pellets(available_pacs, normal_pellets, last, scene)
 
         # Merge the pac targets.
-        print(f"pac to super  : {pac_to_super}", file=sys.stderr)
-        print(f"pac to unstack: {pac_to_unstuck}", file=sys.stderr)
-        print(f"pac to normal : {pac_to_normal}", file=sys.stderr)
         pac_targets = merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal)
-
-
-
+        pr("pac to super"  , pac_to_super)
+        pr("pac to unstack", pac_to_unstuck)
+        pr("pac to normal" , pac_to_normal)
         pr("pac targets", pac_targets)
-        # Command selection in which the speed is abused if there are no visible enemies.
-        moves = []
-        speeds = []
-        switches = [] 
-        for pac in pacs['mine']:
-            pr("pac", pac)
-            
-            if pac['speed_turns_left'] == 0:
-                if len(pacs['their']) == 0:
-                    speeds.append(f"SPEED {pac['id']} SPEED")
-                else:
-                    # TODO replace this with SWITCH
-                    speeds.append(f"SPEED {pac['id']} SPEED")
-            else:
-                target = pac_targets[pac['id']]
-                moves.append(f"MOVE {pac['id']} {target[0]} {target[1]} ({target[0]},{target[1]})")
-
-        # Print out the commands
-        print(moves + speeds + switches, file=sys.stderr)
-        print("  |  ".join(moves + speeds + switches))
+        
+        # Generate and execute the commands
+        generate_execute_commands(pacs, pac_targets, scene)
         
         # Update the cross turn variables.
         last['super_pellet_count'] = len(super_pellets)

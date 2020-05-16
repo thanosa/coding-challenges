@@ -47,9 +47,10 @@ def read_scene():
     # Collection of all unexplored floor positions.
     scene['unexplored'] = copy.deepcopy(scene['floor'])
 
-    # Analyze scene to detect the pois (points of interest)
+    # Analyze scene to detect the pois (points of interest).
     loop_entries = [(x, y) for x in [0, width - 1] for y in scene['loops']]
 
+    # Detect the dead ends.
     dead_ends = []
     for floor in scene['floor']:
         if floor not in loop_entries:
@@ -65,7 +66,6 @@ def read_scene():
                 dead_ends.append(floor) 
     scene['dead_ends'] = dead_ends
 
-    pr("dead_ends", dead_ends)
 
     return scene
 

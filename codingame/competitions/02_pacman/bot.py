@@ -21,6 +21,22 @@ def pr(variable_name, variable):
     print(f"{variable_name}: {variable}", file=sys.stderr)
 
 
+def next_to(point, direction):
+    """
+    Gets a point and returns the next on the direction specified.
+    """
+    assert direction in ['up', 'down', 'left', 'right']
+
+    if direction == 'up':
+        return (point[0] - 1, point[1])
+    elif direction == 'down':
+        return (point[0] + 1, point[1]) 
+    elif direction == 'left':
+        return (point[0], point[1] - 1) 
+    elif direction == 'right':
+        return (point[0], point[1] + 1)
+
+
 def read_scene():
     """
     Reads the scene.
@@ -54,10 +70,10 @@ def read_scene():
     dead_ends = []
     for floor in scene['floor']:
         if floor not in loop_entries:
-            up = (floor[0] - 1, floor[1]) in scene['wall']
-            down = (floor[0] + 1, floor[1]) in scene['wall']
-            left = (floor[0], floor[1] - 1) in scene['wall']
-            right = (floor[0], floor[1] + 1) in scene['wall']
+            up = next_to(floor, 'up') in scene['wall']
+            down = next_to(floor, 'down') in scene['wall']
+            left = next_to(floor, 'left') in scene['wall']
+            right = next_to(floor, 'right') in scene['wall']
 
             # Tricky way to convert a boolean to 0 or 1.
             wall_count = up * 1 + down * 1 + left * 1 + right * 1
@@ -65,6 +81,14 @@ def read_scene():
             if wall_count == 3:
                 dead_ends.append(floor) 
     scene['dead_ends'] = dead_ends
+
+    # Detect the pois (point of interest)
+    # These are the floor with 4 liberties, 3 or 2 but in corner.
+    # floor_4 = []
+    # floor_3 = []
+    # floor_2 = []
+    # for floor in scene['floor']:
+    #     if floor not in [loop_entries, dead_ends]:
 
 
     return scene

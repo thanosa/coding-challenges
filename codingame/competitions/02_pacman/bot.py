@@ -51,70 +51,60 @@ def read_scene():
     """
     width, height = [int(i) for i in input().split()]
     scene = {'width': width, 'height': height, 'rows': [], 
-             'floor': [], 'floor_4': [], 'floor_3': [], 'floor_2': [], 
-             'wall': [], 'loops': []}
+             'floor': set(), 'floor_4': set(), 'floor_3': set(), 'floor_2_corner': set(), 'floor_2_aisle': set(), 'floor_1': set(),
+             'wall': set(), 'loops': set(), 'loop_entries': set()}
 
     for y in range(height):
         row = input()
         scene['rows'].append(row)
 
-        # Find the floor.
-        scene['floor'].extend([(x, y) for x, c in enumerate(row) if c == FLOOR_CHARACTER])
-        scene['wall'].extend([(x, y) for x, c in enumerate(row) if c == WALL_CHARACTER])
+        # Detect floor and wall.
+        scene['floor'] |= {(x, y) for x, c in enumerate(row) if c == FLOOR_CHARACTER}
+        scene['wall'] |= {(x, y) for x, c in enumerate(row) if c == WALL_CHARACTER}
 
-        pr("row", row)
-        # Find the loops.
+        # Detect loops entries.
         if row[0] == row[-1] == FLOOR_CHARACTER:
-            scene['loops'].append(y)
+            scene['loops'].add(y)
+            scene['loop_entries'] |= {(0, y), (width - 1, y)}
 
-    # Collection of all unexplored floor positions.
+    # Initialize unexplored floor.
     scene['unexplored'] = copy.deepcopy(scene['floor'])
 
-    # Analyze scene to detect the pois (points of interest).
-    loop_entries = [(x, y) for x in [0, width - 1] for y in scene['loops']]
 
-    # Detect the dead ends.
-    dead_ends = []
-    for floor in scene['floor']:
-        if floor not in loop_entries:
-            wall_count = 0
-            for neighbor in get_neighbors(floor).values():
-                if neighbor in scene['wall']:
-                    wall_count += 1
-            if wall_count == 3:
-                dead_ends.append(floor) 
-    scene['dead_ends'] = dead_ends
+    # Analyze floor liberties
+    # 4 liberties: crossroad
+    # 3 liberties: T-shaped crossroad
+    # 2 liberties: corners or aisles
+    # 1 liberty:   dead-end
 
-    # Detect the pois (point of interest)
-    # These are the floor with 4 liberties, 3 or 2 but in corner.
-    floor_4 = []
-    floor_3 = []
-    floor_2 = []
-    for floor in scene['floor']:
-        if floor not in [loop_entries, dead_ends]:
-            neighbors = get_neighbors(floor).values()
-            liberties = 0
-            for neighbor in neighbors:
-                if neighbor in scene['floor']:
-                    liberties += 1
-            pr("floor", floor)
-            pr("liberties", liberties)
-            if liberties == 4:
-                floor_4.append(floor)
-            elif liberties == 3:
-                floor_3.append(floor)
-            elif liberties == 2:
-                pass
-                # if neighbors[0][0] != neighbors[1][0] and neighbors[0][1] != neighbors[1][2]:
-                #     floor_2.append(floor)
+    # pr("scene['floor']", scene['floor'])
+    # pr("scene['loop_entries']", scene['loop_entries'])
+    # pr("scene['floor'].difference(scene['loop_entries'])", scene['floor'].difference(scene['loop_entries']))
 
-    scene['floor4'] = floor_4
-    scene['floor3'] = floor_3
-    scene['floor2'] = floor_2
+    for floor in scene['floor'].difference(scene['loop_entries']):
+        neighbors = get_neighbors(floor).values()
+        
+        liberties = sum([1 if neighbor in scene['floor'] else 0 for neighbor in neighbors])
+        # pr("liberties", liberties)
+        if liberties == 4:
+            scene['floor_4'].add(floor)
+        elif liberties == 3:
+            scene['floor_3'].add(floor)
+        elif liberties == 2:
+            pass
+            # if neighbors[0][0] != neighbors[1][0] and neighbors[0][1] != neighbors[1][1]:
+            #      scene['floor_2_corner'].add(floor)
+            # else:
+            #      scene['floor_2_aisle'].add(floor)
+        elif liberties == 1:
+            scene['floor_1'].add(floor)
 
-    pr("floor4", floor_4)
-    pr("floor3", floor_3)
-    pr("floor2", floor_2)
+
+    pr("scene['floor_4']", scene['floor_4'])
+    pr("scene['floor_3']", scene['floor_3'])
+    pr("scene['floor_2_corner']", scene['floor_2_corner'])
+    pr("scene['floor_2_aisle']", scene['floor_2_aisle'])
+    pr("scene['floor_1']", scene['floor_1'])
 
     return scene
 

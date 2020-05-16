@@ -70,41 +70,29 @@ def read_scene():
     # Initialize unexplored floor.
     scene['unexplored'] = copy.deepcopy(scene['floor'])
 
-
     # Analyze floor liberties
     # 4 liberties: crossroad
     # 3 liberties: T-shaped crossroad
     # 2 liberties: corners or aisles
     # 1 liberty:   dead-end
-
-    # pr("scene['floor']", scene['floor'])
-    # pr("scene['loop_entries']", scene['loop_entries'])
-    # pr("scene['floor'].difference(scene['loop_entries'])", scene['floor'].difference(scene['loop_entries']))
-
     for floor in scene['floor'].difference(scene['loop_entries']):
-        neighbors = get_neighbors(floor).values()
+        neighbors = get_neighbors(floor)
         
-        liberties = sum([1 if neighbor in scene['floor'] else 0 for neighbor in neighbors])
-        # pr("liberties", liberties)
+        liberties = sum([1 if neighbor in scene['floor'] else 0 for neighbor in neighbors.values()])
+        
         if liberties == 4:
             scene['floor_4'].add(floor)
         elif liberties == 3:
             scene['floor_3'].add(floor)
         elif liberties == 2:
-            pass
-            # if neighbors[0][0] != neighbors[1][0] and neighbors[0][1] != neighbors[1][1]:
-            #      scene['floor_2_corner'].add(floor)
-            # else:
-            #      scene['floor_2_aisle'].add(floor)
+            is_vertical = neighbors['up'] in scene['floor'] and neighbors['down'] in scene['floor']
+            is_horizontal = neighbors['left'] in scene['floor'] and neighbors['right'] in scene['floor']
+            if is_vertical or is_horizontal:
+                scene['floor_2_aisle'].add(floor)
+            else:
+                scene['floor_2_corner'].add(floor)
         elif liberties == 1:
             scene['floor_1'].add(floor)
-
-
-    pr("scene['floor_4']", scene['floor_4'])
-    pr("scene['floor_3']", scene['floor_3'])
-    pr("scene['floor_2_corner']", scene['floor_2_corner'])
-    pr("scene['floor_2_aisle']", scene['floor_2_aisle'])
-    pr("scene['floor_1']", scene['floor_1'])
 
     return scene
 

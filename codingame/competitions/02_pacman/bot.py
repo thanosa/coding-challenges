@@ -51,6 +51,7 @@ def read_scene():
     width, height = [int(i) for i in input().split()]
     scene = {'width': width, 'height': height, 'rows': [], 
              'floor': set(), 'floor_4': set(), 'floor_3': set(), 'floor_2_corner': set(), 'floor_2_aisle': set(), 'floor_1': set(),
+             'un_floor': set(), 'un_floor_4': set(), 'un_floor_3': set(), 'un_floor_2_corner': set(), 'un_floor_2_aisle': set(), 'un_floor_1': set(),
              'wall': set(), 'loops': set(), 'loop_entries': set()}
 
     for y in range(height):
@@ -65,9 +66,6 @@ def read_scene():
         if row[0] == row[-1] == FLOOR_CHARACTER:
             scene['loops'].add(y)
             scene['loop_entries'] |= {(0, y), (width - 1, y)}
-
-    # Initialize unexplored floor.
-    scene['unexplored'] = copy.deepcopy(scene['floor'])
 
     # Analyze floor liberties
     # 4 liberties: crossroad
@@ -92,6 +90,14 @@ def read_scene():
                 scene['floor_2_corner'].add(floor)
         elif liberties == 1:
             scene['floor_1'].add(floor)
+
+    # Initialize unexplored floor.
+    scene['un_floor'] = copy.deepcopy(scene['floor'])
+    scene['un_floor_4'] = copy.deepcopy(scene['floor_4'])
+    scene['un_floor_3'] = copy.deepcopy(scene['floor_3'])
+    scene['un_floor_2_corner'] = copy.deepcopy(scene['floor_2_corner'])
+    scene['un_floor_2_aisle'] = copy.deepcopy(scene['floor_2_aisle'])
+    scene['un_floor_1'] = copy.deepcopy(scene['floor_1'])
 
     return scene
 
@@ -149,10 +155,18 @@ def update_unexplored(scene, pacs):
     Updates the floor by eliminating the visited floor positions by any pac.
     """
     # Current positions of all pacs.
-    pac_positions = [x['position'] for x in pacs['mine'] + pacs['their']]
+    all_pac_positions = set([x['position'] for x in pacs['mine'] + pacs['their']])
+    mine_pac_positions = set([x['position'] for x in pacs['mine']])
 
     # Remove the current pac positions from the floor.
-    scene['unexplored'] = [x for x in scene['unexplored'] if x not in pac_positions]
+    scene['un_floor'] = scene['un_floor'].difference(all_pac_positions)
+
+    # Update the pois and dead ends with my positions only.
+    scene['un_floor_4'] = scene['un_floor_4'].difference(mine_pac_positions)
+    scene['un_floor_3'] = scene['un_floor_3'].difference(mine_pac_positions)
+    scene['un_floor_2_corner'] = scene['un_floor_2_corner'].difference(mine_pac_positions)
+    scene['un_floor_2_aisle'] = scene['un_floor_2_aisle'].difference(mine_pac_positions)
+    scene['un_floor_1'] = scene['un_floor_1'].difference(mine_pac_positions)
 
     return scene
 
@@ -340,14 +354,14 @@ def resolve_stucks(current_pacs, last, scene):
     last_pacs = last['pacs_mine']
 
     pac_to_unstuck = {}
-    unexplored = scene['unexplored']
+    unexplored = scene['un_floor']
 
     for pac_now in current_pacs:
         for pac_last in last_pacs:
             if pac_now['position'] == pac_last['position'] and pac_now['speed_turns_left'] != MAX_SPEED_TURNS:
                 if len(unexplored) > 0:
                     # Choose the first random unexplored floor that further than threshold.
-                    print("CASE1", file=sys.stderr)
+                    print("UNSTUCK CASE 1", file=sys.stderr)
                     chosen = None
                     for _ in range(MAX_RANDOM_TRIES):
                         random_floor = random.choice(unexplored)
@@ -359,11 +373,11 @@ def resolve_stucks(current_pacs, last, scene):
                     
                     # If nothing has been chosen, a random one is chosen.
                     if chosen == None:
-                        print("CASE2", file=sys.stderr)
+                        print("UNSTUCK CASE 2", file=sys.stderr)
                         chosen = random.choice(unexplored)
                 else:
                     # If there is no unexplored ares then select a random floor.
-                    print("CASE3", file=sys.stderr)
+                    print("UNSTUCK CASE 3", file=sys.stderr)
                     chosen = random.choice(scene['floor'])
 
                 pac_to_unstuck[pac_now['id']] = chosen
@@ -413,19 +427,74 @@ def plan_normal_pellets(pacs_mine, normal_pellets, scene):
     # Assign each pac the furhter available blue that is on the line of sight
     # If there is none then assign the closest one on the scene.
     
-    targets = scene['']
+    pois = scene['un_floor_4'] | scene['un_floor_3'] | scene['un_floor_2_corner']
+    dead_ends = scene['un_floor_1']
+
     for pac in pacs_mine:
-        
-        
+        selected_target = None
+        if pois:
+            # Close visible pois in all directions.
+            close_visible_pois = set()
+            for direction in ['up', 'down', 'left', 'right']:
+                temp_floor = pac['position']
+                last_valid_poi = None
+                while True:
+                    neighbor = get_neighbors(temp_floor, direction)
+                    if neighbor in scene['wall']:
+                        break
+                    if neighbor in pois:
+                        last_valid_poi = neighbor
+                    temp_floor = neighbor
+                if last_valid_poi is not None:
+                    close_visible_pois.add(last_valid_poi)
 
+            # From the close visible pois, selecte furthest one.
+            selected_poi = None
+            if close_visible_pois:
+                max_distance = -math.inf
+                for poi in close_visible_pois:
+                    distance = calc_distance(poi, pac['position'], scene)
+                    if distance > max_distance:
+                        max_distance = distance
+                        selected_poi = poi
+                assert selected_poi is not None
+            
+            # There is no visible poi, then go to the closest invisible poi. 
+            else:
+                min_distance = math.inf
+                for poi in pois:
+                    distance = calc_distance(poi, pac['position'], scene)
+                    if distance < min_distance:
+                        min_distance = distance
+                        selected_poi = poi
+                assert selected_poi is not None
 
+            # The next pac should not select the same poi.
+            selected_target = selected_poi
+            pois.remove(selected_poi)
+
+        elif dead_ends:
+            # Move to the closest dead end.
+            min_distance = math.inf
+            selected_dead_end = None
+            for dead_end in dead_ends:
+                distance = calc_distance(dead_end, pac['position'], scene)
+                if distance < min_distance:
+                    min_distance = distance
+                    selected_dead_end = dead_end
+            assert selected_dead_end is not None
+
+            # The next pac shoudl not select the same dead end.
+            selected_target = selected_dead_end
+            dead_ends.remove(selected_dead_end)
         
-        if selected_target is not None:
-            # Assign the target to the pac.   
-            pac_targets[pac['id']] = selected_target
+        # Fallback
+        if selected_target == None:
+            pr("RANDOM SELECTION")
+            selected_target = random.choice(scene['un_floor'])
 
-            # Remove the assigned target.
-            normal_pellets = [x for x in normal_pellets if not x == selected_target]
+        # Assign the target to the pac.   
+        pac_targets[pac['id']] = selected_target
 
     return pac_targets
 
@@ -436,7 +505,7 @@ def explore_floor(pacs_mine, scene):
     """
     pac_target = {}
     
-    unexplored = scene['unexplored']
+    unexplored = scene['un_floor']
 
     if len(unexplored) > 0:
         targets = unexplored

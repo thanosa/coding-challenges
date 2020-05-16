@@ -286,10 +286,10 @@ def collect_super_pellets(pacs, super_pellets, last, scene):
         super_pellets_decreased = len(super_pellets) < last['super_pellet_count']
 
         if there_is_no_super_pellet_plan or super_pellets_decreased:
-            print("collect super pellet - NEW PLAN", file=sys.stderr)
+            print("SUPER - NEW PLAN", file=sys.stderr)
             return plan_super_pellets(pacs['mine'], super_pellets, scene)
         else:
-            print("collect super pellet - USE LAST", file=sys.stderr)
+            print("SUPER - USE LAST", file=sys.stderr)
             return last['super_pellet_plan']
     
 
@@ -435,23 +435,17 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
         selected_target = None
         
         # Check if plan exists and shoudl persist.
-        pr("normal_pellet_plan", last['normal_pellet_plan'])
         if last['normal_pellet_plan'] is not None:
-            pr("last plan exist")
             if pac['id'] in last['normal_pellet_plan']:
-                pr("pac id exists in last plan")
                 planned_position = last['normal_pellet_plan'][pac['id']]
                 current_position = pac['position']
 
-                pr("planned position", planned_position)
-                pr("current position", current_position)
                 if current_position != planned_position:
                     selected_target = planned_position
-                    pr("used existing plan: ", selected_target)
+                    pr("NORMAL - USE LAST: ", selected_target)
         
         # Create a new plan
         if selected_target is None:
-            pr("creating a new plan")
             if dead_ends:
                 # Move to the closest dead end.
                 min_distance = math.inf
@@ -466,7 +460,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                 # The next pac shoudl not select the same dead end.
                 selected_target = selected_dead_end
                 dead_ends.remove(selected_dead_end)
-                pr("selected a dead end: ", selected_target)
+                pr("NORMAL - NEW PLAN - DEAD-END: ", selected_target)
             
             elif pois:
                 # Close visible pois in all directions.
@@ -488,7 +482,6 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                 # From the close visible pois, selecte furthest one.
                 selected_poi = None
                 if close_visible_pois:
-                    pr("There are close visible pois: ", close_visible_pois)
                     min_distance = math.inf
                     for poi in close_visible_pois:
                         distance = calc_distance(poi, pac['position'], scene)
@@ -496,10 +489,11 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                             min_distance = distance
                             selected_poi = poi
                     assert selected_poi is not None
+                    pr("NORMAL - NEW PLAN - VISIBLE POI", selected_poi)    
+                    pr("Visible pois: ", close_visible_pois)
                 
                 # There is no visible poi, then go to the closest invisible poi. 
                 else:
-                    pr("No visible pois: ", close_visible_pois)
                     min_distance = math.inf
                     for poi in pois:
                         distance = calc_distance(poi, pac['position'], scene)
@@ -507,16 +501,15 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                             min_distance = distance
                             selected_poi = poi
                     assert selected_poi is not None
-
+                    pr("NORMAL - NEW PLAN - INVISIBLE POI", selected_poi)    
 
                 # The next pac should not select the same poi.
                 selected_target = selected_poi
                 pois.remove(selected_poi)
-                pr("Selected poi: ", selected_poi)
         
         # Fallback
         if selected_target == None:
-            pr("RANDOM SELECTION")
+            pr("NORMA - !!! RANDOM !!! RANDOM !!! RANDOM !!!")
             selected_target = random.choice(list(scene['un_floor']))
 
         # Assign the target to the pac.   

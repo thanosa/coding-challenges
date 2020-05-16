@@ -258,10 +258,6 @@ def calc_clusters(targets, pac_count, scene):
         # Calculate the super pellet to super pellet distances.
         distances_set, distances_dict = calc_t2t_distances(targets, scene)
 
-        print(f"unique distances: {distances_set}", file=sys.stderr)
-        for d in distances_dict.items():
-            print(d, file=sys.stderr)
-
         # Clustering the targets one-by-one until they become as much as my pacs.
         for _ in range(len(clusters) - pac_count):
             pair_to_join = min(distances_dict, key=(lambda key: distances_dict[key]))
@@ -491,9 +487,10 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                             min_distance = distance
                             selected_poi = poi
                     
-                    if selected_poi is not None:
+                    if selected_poi is None:
                         pr("NORMAL - NEW PLAN - No selected poi in close_visible_pois")
-                    pr("NORMAL - NEW PLAN - VISIBLE POI", selected_poi)    
+                    else:
+                        pr("NORMAL - NEW PLAN - VISIBLE POI", selected_poi)    
                     pr("Visible pois: ", close_visible_pois)
                 
                 # There is no visible poi, then go to the closest invisible poi. 
@@ -504,9 +501,10 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                         if distance < min_distance:
                             min_distance = distance
                             selected_poi = poi
-                    if selected_poi is not None:
+                    if selected_poi is None:
                         pr("NORMAL - NEW PLAN - No selected poi in ELSE close_visible_pois")
-                    pr("NORMAL - NEW PLAN - INVISIBLE POI", selected_poi)    
+                    else:
+                        pr("NORMAL - NEW PLAN - INVISIBLE POI", selected_poi)    
 
                 # The next pac should not select the same poi.
                 selected_target = selected_poi

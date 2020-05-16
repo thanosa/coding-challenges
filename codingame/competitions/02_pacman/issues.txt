@@ -1,11 +1,6 @@
-- Scene analysis
-    - Identify dead-end floor
-        - if it has 1 liberty or 2 liberties but it is next to a dead-end (not recursively)
-
-- Normal pellect 
-
 - Optimization for the unexplored area.
     - The unexplored should shrink by the floor that is viewable and empty !!!
+    - The unexplored shoudl shrink by the mirrored of my starting pac positions !!!
 
 - Collisions enhancements
     FRIENDS

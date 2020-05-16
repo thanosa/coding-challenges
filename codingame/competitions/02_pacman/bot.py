@@ -24,7 +24,6 @@ def pr(message, variable=None):
         print(f"{message}", file=sys.stderr)
 
 
-
 def get_neighbors(point, direction=None) -> {}:
     """
     Gets a point and returns all directions or one specified.
@@ -407,6 +406,8 @@ def plan_normal_pellets(pacs_mine, targets, scene):
     print(f"normal pellets: {targets}", file=sys.stderr)
 
     pac_targets = {}
+
+    
 
     # Assign each pac to the closes normal pellet.
     if pacs_mine is not None:

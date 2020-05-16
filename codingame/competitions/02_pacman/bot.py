@@ -90,6 +90,32 @@ def pacs_see_each_other(pac1, pac2, pacs, scene) -> bool:
             return True
 
 
+def play_rock_paper_scissors(pac_mine_type, pac_their_type) -> int:
+    """
+    Return the outcome of the Rock Papper Scissors game.
+         1: win
+         0: tie
+        -1: lose
+    """
+    if pac_mine_type == pac_their_type:
+        return 0
+    elif pac_mine_type == "ROCK":
+        if pac_their_type == "SCISSORS":
+            return 1
+        else:
+            return "LOSE"
+    elif pac_mine_type == "PAPER":
+        if pac_their_type == "ROCK":
+            return 1
+        else:
+            return "LOSE"
+    elif pac_mine_type == "SCISSORS":
+        if pac_their_type == "PAPER":
+            return 1
+        else:
+            return -1
+
+
 def read_scene():
     """
     Reads the scene.
@@ -605,21 +631,27 @@ def generate_execute_commands(pacs, pac_targets, scene):
     If there is we switch, speed and target them.
     """
     commands = []
-    for pac in pacs['mine']:
-        pr("pac", pac)
+    for pac_mine in pacs['mine']:
+        pr("pac", pac_mine)
         
-        if pac['speed_turns_left'] == 0:
+        if pac_mine['speed_turns_left'] == 0:
             if len(pacs['their']) == 0:
-                commands.append(f"SPEED {pac['id']} SPEED")
+                commands.append(f"SPEED {pac_mine['id']} SPEED")
             else:
-                for enemy in pacs['their']:
-                    if pacs_see_each_other(pac['position'], enemy['position'], pacs, scene):
-                        pass
+                for pac_their in pacs['their']:
+                    if pacs_see_each_other(pac_mine['position'], pac_their['position'], pacs, scene):
+                        pr("PACS see each other", pac_mine['position'])
+                        pr("PACS see each other", pac_their['position'])
 
-                commands.append(f"SPEED {pac['id']} SPEED")
+                    else:
+                        pr("PACS DON'T see each other", pac_mine['position'])
+                        pr("PACS DON'T see each other", pac_their['position'])
+
+
+                commands.append(f"SPEED {pac_mine['id']} SPEED")
         else:
-            target = pac_targets[pac['id']]
-            commands.append(f"MOVE {pac['id']} {target[0]} {target[1]} ({target[0]},{target[1]})")
+            target = pac_targets[pac_mine['id']]
+            commands.append(f"MOVE {pac_mine['id']} {target[0]} {target[1]} ({target[0]},{target[1]})")
 
     # Execute the commands
     print("  |  ".join(commands))

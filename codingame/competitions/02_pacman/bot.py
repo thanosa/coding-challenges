@@ -522,7 +522,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
     return pac_targets
 
 
-def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal, pac_to_explore):
+def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal):
     """
     Merges the targets dictionaries into a single one.
     """
@@ -536,9 +536,6 @@ def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal, pac_to_explore):
 
     if pac_to_normal is not None:
         pac_targets.update(pac_to_normal)
-
-    if pac_to_explore is not None:
-        pac_targets.update(pac_to_explore)
 
     return pac_targets
 
@@ -566,6 +563,9 @@ def main():
         # Read pacs.
         pacs = read_pacs()
 
+        for pac in pacs:
+            pr("pac", pac)
+
         # Update the unexplored floor.
         scene = update_unexplored(scene, pacs)
 
@@ -587,8 +587,7 @@ def main():
         print(f"pac to super  : {pac_to_super}", file=sys.stderr)
         print(f"pac to unstack: {pac_to_unstuck}", file=sys.stderr)
         print(f"pac to normal : {pac_to_normal}", file=sys.stderr)
-        print(f"pac to explore: {pac_to_explore}", file=sys.stderr)
-        pac_targets = merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal, pac_to_explore)
+        pac_targets = merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal)
 
         # Command generation.
         moves = [f"MOVE {pac} {target[0]} {target[1]} ({target[0]},{target[1]})" for pac, target in pac_targets.items()]

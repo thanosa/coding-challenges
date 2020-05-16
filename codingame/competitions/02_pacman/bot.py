@@ -295,13 +295,12 @@ def collect_super_pellets(pacs, super_pellets, last, scene):
 
 def plan_super_pellets(pacs_mine, super_pellets, scene):
     """
-    The planning is done the first time and it is updated only if the count of the 
+    The plan is done once and is updated only if the count of the 
     super pallets is decreased.
 
     The super pellets are clustered one by one until they reach the number of pacs.
     Each cluster is assigned to the closest pac and that pac will move to the closest 
     supper pellet of the assigned cluster.
-
     """
 
     # Preparation: Cluster the super pellets.
@@ -413,7 +412,7 @@ def find_available_pacs(pacs, pac_to_super, pac_to_unstuck=None, pac_to_normal=N
     return available_pacs
 
 
-def collect_normal_pellets(pacs_mine, normal_pellets, scene):
+def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
     """
     Each pac is assgined to the closest available normal pellet
     """
@@ -432,63 +431,78 @@ def collect_normal_pellets(pacs_mine, normal_pellets, scene):
     dead_ends = scene['un_floor_1']
 
     for pac in pacs_mine:
+        # The target has not been achived yet.
+        # TODO maybe check the progress and if it is not good then change.
+
         selected_target = None
-        if pois:
-            # Close visible pois in all directions.
-            close_visible_pois = set()
-            for direction in ['up', 'down', 'left', 'right']:
-                temp_floor = pac['position']
-                last_valid_poi = None
-                for _ in range(MAX_LOOP_TRIES):
-                    # TODO debug here.
-                    neighbor = get_neighbors(temp_floor, direction)
-                    if neighbor in scene['wall']:
-                        break
-                    if neighbor in pois:
-                        last_valid_poi = neighbor
-                    temp_floor = neighbor
-                if last_valid_poi is not None:
-                    close_visible_pois.add(last_valid_poi)
-
-            # From the close visible pois, selecte furthest one.
-            selected_poi = None
-            if close_visible_pois:
+        
+        # Check if plan exists and shoudl persist.
+        if last['normal_pellet_plan'] is not None:
+            if pac['id'] in last['normal_pellet_plan']:
+                planned_position = last['normal_pellet_plan'][pac['id']]
+                current_position = pac['position']
+                if current_position != planned_position:
+                    selected_target = planned_position
+        
+        # Create a new plan
+        else:
+            if dead_ends:
+                # Move to the closest dead end.
                 min_distance = math.inf
-                for poi in close_visible_pois:
-                    distance = calc_distance(poi, pac['position'], scene)
+                selected_dead_end = None
+                for dead_end in dead_ends:
+                    distance = calc_distance(dead_end, pac['position'], scene)
                     if distance < min_distance:
                         min_distance = distance
-                        selected_poi = poi
-                assert selected_poi is not None
+                        selected_dead_end = dead_end
+                assert selected_dead_end is not None
+
+                # The next pac shoudl not select the same dead end.
+                selected_target = selected_dead_end
+                dead_ends.remove(selected_dead_end)
             
-            # There is no visible poi, then go to the closest invisible poi. 
-            else:
-                min_distance = math.inf
-                for poi in pois:
-                    distance = calc_distance(poi, pac['position'], scene)
-                    if distance < min_distance:
-                        min_distance = distance
-                        selected_poi = poi
-                assert selected_poi is not None
+            elif pois:
+                # Close visible pois in all directions.
+                close_visible_pois = set()
+                for direction in ['up', 'down', 'left', 'right']:
+                    temp_floor = pac['position']
+                    last_valid_poi = None
+                    for _ in range(MAX_LOOP_TRIES):
+                        # TODO debug here.
+                        neighbor = get_neighbors(temp_floor, direction)
+                        if neighbor in scene['wall']:
+                            break
+                        if neighbor in pois:
+                            last_valid_poi = neighbor
+                        temp_floor = neighbor
+                    if last_valid_poi is not None:
+                        close_visible_pois.add(last_valid_poi)
 
-            # The next pac should not select the same poi.
-            selected_target = selected_poi
-            pois.remove(selected_poi)
+                # From the close visible pois, selecte furthest one.
+                selected_poi = None
+                if close_visible_pois:
+                    min_distance = math.inf
+                    for poi in close_visible_pois:
+                        distance = calc_distance(poi, pac['position'], scene)
+                        if distance < min_distance:
+                            min_distance = distance
+                            selected_poi = poi
+                    assert selected_poi is not None
+                
+                # There is no visible poi, then go to the closest invisible poi. 
+                else:
+                    min_distance = math.inf
+                    for poi in pois:
+                        distance = calc_distance(poi, pac['position'], scene)
+                        if distance < min_distance:
+                            min_distance = distance
+                            selected_poi = poi
+                    assert selected_poi is not None
 
-        elif dead_ends:
-            # Move to the closest dead end.
-            min_distance = math.inf
-            selected_dead_end = None
-            for dead_end in dead_ends:
-                distance = calc_distance(dead_end, pac['position'], scene)
-                if distance < min_distance:
-                    min_distance = distance
-                    selected_dead_end = dead_end
-            assert selected_dead_end is not None
+                # The next pac should not select the same poi.
+                selected_target = selected_poi
+                pois.remove(selected_poi)
 
-            # The next pac shoudl not select the same dead end.
-            selected_target = selected_dead_end
-            dead_ends.remove(selected_dead_end)
         
         # Fallback
         if selected_target == None:
@@ -561,6 +575,7 @@ def main():
     last = {
         'super_pellet_count': -1, 
         'super_pellet_plan': None,
+        'normal_pellet_plan': None,
         'pacs_mine': {}}
 
     # Game loop.
@@ -589,7 +604,7 @@ def main():
 
         # Pass 3 - Collect normal pellets.
         available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck)
-        pac_to_normal = collect_normal_pellets(available_pacs, normal_pellets, scene)
+        pac_to_normal = collect_normal_pellets(available_pacs, normal_pellets, last, scene)
 
         # Pass 4 - Exploration of the unexplored floor.
         available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck, pac_to_normal)
@@ -616,9 +631,10 @@ def main():
         # Updates of the cross turn variables.
         last['super_pellet_count'] = len(super_pellets)
         last['super_pellet_plan'] = pac_to_super
+        last['normal_pellet_plan'] = pac_to_normal
         last['pacs_mine'] = copy.deepcopy(pacs['mine'])
         
-        print(f"last: {last}", file=sys.stderr)
+        print(f"last normal_pellet_plan: {last['normal_pellet_plan']}", file=sys.stderr)
 
 
 # Entry point.

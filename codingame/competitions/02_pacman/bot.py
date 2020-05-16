@@ -1,12 +1,17 @@
 import copy
 import itertools
-import sys
 import math
+import random
+import sys
 
 # Constants
 SUPER_PELLET_VALUE = 10
+MAX_SPEED_TURNS = 5
 WALL = "#"
 FLOOR = " "
+
+MIN_DISTANCE_TO_UNSTUCK = 6
+MAX_RANDOM_TRIES = 10
 
 def read_scene():
     """
@@ -271,21 +276,64 @@ def plan_super_pellets(pacs_mine, targets, scene):
     return pac_targets
 
 
-def find_available_pacs(pacs, pac_to_super, pac_to_normal=None):
+def resolve_stucks(current_pacs, last, scene):
+    """
+    Basic way to unstuck my packs in case they stay on the same square floor.
+    The detection should consider the speed up (speed_turns_left': 5)
+    """
+    last_pacs = last['pacs_mine']
+
+    pac_to_unstuck = {}
+    unexplored = scene['unexplored']
+
+    for pac_now in current_pacs:
+        for pac_last in last_pacs:
+            if pac_now['position'] == pac_last['position'] and pac_now['speed_turns_left'] != MAX_SPEED_TURNS:
+                if len(unexplored) > 0:
+                    # Choose the first random unexplored floor that further than threshold.
+                    print("CASE1", file=sys.stderr)
+                    chosen = None
+                    for _ in range(MAX_RANDOM_TRIES):
+                        random_floor = random.choice(unexplored)
+                        distance = calc_distance(pac_now['position'], random_floor, scene)
+
+                        if distance > MIN_DISTANCE_TO_UNSTUCK:
+                            chosen = random_floor
+                            break
+                    
+                    # If nothing has been chosen, a random one is chosen.
+                    if chosen == None:
+                        print("CASE2", file=sys.stderr)
+                        chosen = random.choice(unexplored)
+                else:
+                    # If there is no unexplored ares then select a random floor.
+                    print("CASE3", file=sys.stderr)
+                    chosen = random.choice(scene['floor'])
+
+                pac_to_unstuck[pac_now['id']] = chosen
+
+    return pac_to_unstuck
+
+
+def find_available_pacs(pacs, pac_to_super, pac_to_unstuck=None, pac_to_normal=None):
     """
     Finds the available pacs that are not assigned
     """
-    
-    for pac in pacs['mine']:
-        print(f"pac mine: {pac}", file=sys.stderr)
-    print(f"pac_to_super  : {pac_to_super}", file=sys.stderr)
-    print(f"pac_to_normal : {pac_to_normal}", file=sys.stderr)
+
+    # for pac in pacs['mine']:
+    #     print(f"pac mine: {pac}", file=sys.stderr)
+    # print(f"pac_to_super  : {pac_to_super}", file=sys.stderr)
+    # print(f"pac_to_unstuck: {pac_to_unstuck}", file=sys.stderr)
+    # print(f"pac_to_normal : {pac_to_normal}", file=sys.stderr)
 
     available_pacs = pacs['mine']
 
     if pac_to_super is not None:
         available_pacs = [x for x in pacs['mine'] if x['id'] not in pac_to_super.keys()]
 
+    if pac_to_unstuck is not None:
+        available_pacs = [x for x in available_pacs if x['id'] not in pac_to_unstuck.keys()]
+    
     if pac_to_normal is not None:
         available_pacs = [x for x in available_pacs if x['id'] not in pac_to_normal.keys()]
 
@@ -354,7 +402,7 @@ def explore_floor(pacs_mine, scene):
     return pac_target
 
 
-def merge_targets(pac_to_super, pac_to_normal, pac_to_explore):
+def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal, pac_to_explore):
     """
     Merges the targets dictionaries into a single one.
     """
@@ -362,6 +410,9 @@ def merge_targets(pac_to_super, pac_to_normal, pac_to_explore):
 
     if pac_to_super is not None:
         pac_targets = copy.deepcopy(pac_to_super)
+
+    if pac_to_unstuck is not None:
+        pac_targets.update(pac_to_unstuck)
 
     if pac_to_normal is not None:
         pac_targets.update(pac_to_normal)
@@ -378,7 +429,10 @@ def main():
     scene = read_scene()
 
     # Initialize the cross turn variables.
-    last = {'super_pellet_count': -1, 'super_pellet_plan': None}
+    last = {
+        'super_pellet_count': -1, 
+        'super_pellet_plan': None,
+        'pacs_mine': {}}
 
     # Game loop.
     turn = 0
@@ -400,19 +454,24 @@ def main():
         # Pass 1 - Collect super pellets
         pac_to_super = collect_super_pellets(pacs, super_pellets, last, scene)
 
-        # Pass 2 - Collect normal pellets.
+        # Pass 2 - Resolve stucks
         available_pacs = find_available_pacs(pacs, pac_to_super)
+        pac_to_unstuck = resolve_stucks(available_pacs, last, scene)
+
+        # Pass 3 - Collect normal pellets.
+        available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck)
         pac_to_normal = plan_normal_pellets(available_pacs, normal_pellets, scene)
 
-        # Pass 3 - Exploration of the unexplored floor.
-        available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_normal)
+        # Pass 4 - Exploration of the unexplored floor.
+        available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck, pac_to_normal)
         pac_to_explore = explore_floor(available_pacs, scene)
 
         # Merge the pac targets.
         print(f"pac to super  : {pac_to_super}", file=sys.stderr)
+        print(f"pac to unstack: {pac_to_unstuck}", file=sys.stderr)
         print(f"pac to normal : {pac_to_normal}", file=sys.stderr)
         print(f"pac to explore: {pac_to_explore}", file=sys.stderr)
-        pac_targets = merge_targets(pac_to_super, pac_to_normal, pac_to_explore)
+        pac_targets = merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal, pac_to_explore)
 
         # Command generation.
         moves = [f"MOVE {pac} {target[0]} {target[1]} ({target[0]},{target[1]})" for pac, target in pac_targets.items()]
@@ -428,6 +487,10 @@ def main():
         # Updates of the cross turn variables.
         last['super_pellet_count'] = len(super_pellets)
         last['super_pellet_plan'] = pac_to_super
+        last['pacs_mine'] = copy.deepcopy(pacs['mine'])
+        
+        print(f"last: {last}", file=sys.stderr)
+
 
 # Entry point.
 main()

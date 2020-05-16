@@ -19,9 +19,6 @@
         - The spots with the longest line of sight in all directions
 
 - Enhacement of collisions
-    Basic:
-        - If it stays on the same square, assign a random unexplored floor
-
     Advanced:
         FRIENDS:
             If they target the same square 

@@ -605,23 +605,38 @@ def main():
         print(f"pac to normal : {pac_to_normal}", file=sys.stderr)
         pac_targets = merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal)
 
-        # Command generation.
-        moves = [f"MOVE {pac} {target[0]} {target[1]} ({target[0]},{target[1]})" for pac, target in pac_targets.items()]
-        speeds = [f"SPEED {pac['id']}" for pac in pacs['mine']]
-       
-        # Turn handler.
-        if turn % 10 == 0:
-            print("|".join(speeds))
-        else:
-            print("|".join(moves))
-        turn += 1
 
-        # Updates of the cross turn variables.
+
+        pr("pac targets", pac_targets)
+        # Command selection in which the speed is abused if there are no visible enemies.
+        moves = []
+        speeds = []
+        switches = [] 
+        for pac in pacs['mine']:
+            pr("pac", pac)
+            
+            if pac['speed_turns_left'] == 0:
+                if len(pacs['their']) == 0:
+                    speeds.append(f"SPEED {pac['id']} SPEED")
+                else:
+                    # TODO replace this with SWITCH
+                    speeds.append(f"SPEED {pac['id']} SPEED")
+            else:
+                target = pac_targets[pac['id']]
+                moves.append(f"MOVE {pac['id']} {target[0]} {target[1]} ({target[0]},{target[1]})")
+
+        # Print out the commands
+        print(moves + speeds + switches, file=sys.stderr)
+        print("  |  ".join(moves + speeds + switches))
+        
+        # Update the cross turn variables.
         last['super_pellet_count'] = len(super_pellets)
         last['super_pellet_plan'] = pac_to_super
         last['normal_pellet_plan'] = pac_to_normal
         last['pacs_mine'] = copy.deepcopy(pacs['mine'])
-        
+
+        # Update the turn
+        turn += 1        
 
 # Entry point.
 main()

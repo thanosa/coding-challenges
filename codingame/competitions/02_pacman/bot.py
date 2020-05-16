@@ -423,33 +423,34 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
 
     # Assign each pac the furhter available blue that is on the line of sight
     # If there is none then assign the closest one on the scene.
-    initial_pois = scene['floor_4'] | scene['floor_3'] | scene['floor_2_corner']
-    pois = scene['un_floor_4'] | scene['un_floor_3'] | scene['un_floor_2_corner']
-    dead_ends = scene['un_floor_1']
-
-    # Calculate the poi exploration percentage.
-    poi_left_percentage = round(len(pois) / len(initial_pois), 3)
-    pr("poi left  %", poi_left_percentage * 100)
-
-
     for pac in pacs_mine:
-        # The target has not been achived yet.
-        # TODO maybe check the progress and if it is not good then change.
         pr("pac: ", pac['id'])
+        # Initialize the selected target.
         selected_target = None
         
-        # Check if plan exists and shoudl persist.
+        # Check if the existing plan should be reused.
         if last['normal_pellet_plan'] is not None:
             if pac['id'] in last['normal_pellet_plan']:
                 planned_position = last['normal_pellet_plan'][pac['id']]
                 current_position = pac['position']
-
                 if current_position != planned_position:
                     selected_target = planned_position
                     pr("NORMAL - USE LAST: ", selected_target)
         
+
         # Create a new plan
         if selected_target is None:
+            
+            # Calculate the % left of each poi category.
+            initial_pois = scene['floor_4'] # | scene['floor_3'] | scene['floor_2_corner']
+            pois = scene['un_floor_4'] # | scene['un_floor_3'] | scene['un_floor_2_corner']
+            dead_ends = scene['un_floor_1']
+
+            # Calculate the poi exploration percentage.
+            poi_left_percentage = round(len(pois) / len(initial_pois), 3)
+            pr("poi left  %", poi_left_percentage * 100)
+
+
             if poi_left_percentage < POI_LEFT_PERCENTAGE_THRESHOLD:
                 # Close visible pois in all directions.
                 close_visible_pois = set()
@@ -467,7 +468,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                     if last_valid_poi is not None:
                         close_visible_pois.add(last_valid_poi)
 
-                # From the close visible pois, selecte furthest one.
+                # From the close visible pois, select the furthest one.
                 selected_poi = None
                 if close_visible_pois:
                     min_distance = math.inf
@@ -485,6 +486,9 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                     min_distance = math.inf
                     for poi in pois:
                         distance = calc_distance(poi, pac['position'], scene)
+                        pr("poi", poi)
+                        pr("min_distance", min_distance)
+                        pr("distance", distance)
                         if distance < min_distance:
                             min_distance = distance
                             selected_poi = poi
@@ -513,7 +517,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
 
         # Fallback
         if selected_target == None:
-            pr("NORMA - !!! RANDOM !!! RANDOM !!! RANDOM !!!")
+            pr("NORMAL - !!! RANDOM !!! RANDOM !!! RANDOM !!!")
             selected_target = random.choice(list(scene['un_floor']))
 
         # Assign the target to the pac.   
@@ -563,8 +567,10 @@ def main():
         # Read pacs.
         pacs = read_pacs()
 
-        for pac in pacs:
-            pr("pac", pac)
+        for pac in pacs['mine']:
+            pr("pac mine", pac)
+        for pac in pacs['their']:
+            pr("pac their", pac)
 
         # Update the unexplored floor.
         scene = update_unexplored(scene, pacs)

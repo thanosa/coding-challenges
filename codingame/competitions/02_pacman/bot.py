@@ -417,8 +417,6 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
     Each pac is assgined to the closest available normal pellet
     """
 
-    print(f"normal pellets: {normal_pellets}", file=sys.stderr)
-
     pac_targets = {}
 
     if pacs_mine is None:
@@ -433,19 +431,27 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
     for pac in pacs_mine:
         # The target has not been achived yet.
         # TODO maybe check the progress and if it is not good then change.
-
+        pr("pac: ", pac['id'])
         selected_target = None
         
         # Check if plan exists and shoudl persist.
+        pr("normal_pellet_plan", last['normal_pellet_plan'])
         if last['normal_pellet_plan'] is not None:
+            pr("last plan exist")
             if pac['id'] in last['normal_pellet_plan']:
+                pr("pac id exists in last plan")
                 planned_position = last['normal_pellet_plan'][pac['id']]
                 current_position = pac['position']
+
+                pr("planned position", planned_position)
+                pr("current position", current_position)
                 if current_position != planned_position:
                     selected_target = planned_position
+                    pr("used existing plan: ", selected_target)
         
         # Create a new plan
-        else:
+        if selected_target is None:
+            pr("creating a new plan")
             if dead_ends:
                 # Move to the closest dead end.
                 min_distance = math.inf
@@ -460,6 +466,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                 # The next pac shoudl not select the same dead end.
                 selected_target = selected_dead_end
                 dead_ends.remove(selected_dead_end)
+                pr("selected a dead end: ", selected_target)
             
             elif pois:
                 # Close visible pois in all directions.
@@ -481,6 +488,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                 # From the close visible pois, selecte furthest one.
                 selected_poi = None
                 if close_visible_pois:
+                    pr("There are close visible pois: ", close_visible_pois)
                     min_distance = math.inf
                     for poi in close_visible_pois:
                         distance = calc_distance(poi, pac['position'], scene)
@@ -491,6 +499,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                 
                 # There is no visible poi, then go to the closest invisible poi. 
                 else:
+                    pr("No visible pois: ", close_visible_pois)
                     min_distance = math.inf
                     for poi in pois:
                         distance = calc_distance(poi, pac['position'], scene)
@@ -499,10 +508,11 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                             selected_poi = poi
                     assert selected_poi is not None
 
+
                 # The next pac should not select the same poi.
                 selected_target = selected_poi
                 pois.remove(selected_poi)
-
+                pr("Selected poi: ", selected_poi)
         
         # Fallback
         if selected_target == None:

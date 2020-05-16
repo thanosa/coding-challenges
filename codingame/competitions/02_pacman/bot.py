@@ -12,6 +12,7 @@ FLOOR_CHARACTER = " "
 
 MIN_DISTANCE_TO_UNSTUCK = 6
 MAX_RANDOM_TRIES = 10
+MAX_LOOP_TRIES = 20
 
 
 def pr(message, variable=None):
@@ -364,7 +365,7 @@ def resolve_stucks(current_pacs, last, scene):
                     print("UNSTUCK CASE 1", file=sys.stderr)
                     chosen = None
                     for _ in range(MAX_RANDOM_TRIES):
-                        random_floor = random.choice(unexplored)
+                        random_floor = random.choice(list(unexplored))
                         distance = calc_distance(pac_now['position'], random_floor, scene)
 
                         if distance > MIN_DISTANCE_TO_UNSTUCK:
@@ -412,7 +413,7 @@ def find_available_pacs(pacs, pac_to_super, pac_to_unstuck=None, pac_to_normal=N
     return available_pacs
 
 
-def plan_normal_pellets(pacs_mine, normal_pellets, scene):
+def collect_normal_pellets(pacs_mine, normal_pellets, scene):
     """
     Each pac is assgined to the closest available normal pellet
     """
@@ -438,7 +439,8 @@ def plan_normal_pellets(pacs_mine, normal_pellets, scene):
             for direction in ['up', 'down', 'left', 'right']:
                 temp_floor = pac['position']
                 last_valid_poi = None
-                while True:
+                for _ in range(MAX_LOOP_TRIES):
+                    # TODO debug here.
                     neighbor = get_neighbors(temp_floor, direction)
                     if neighbor in scene['wall']:
                         break
@@ -451,11 +453,11 @@ def plan_normal_pellets(pacs_mine, normal_pellets, scene):
             # From the close visible pois, selecte furthest one.
             selected_poi = None
             if close_visible_pois:
-                max_distance = -math.inf
+                min_distance = math.inf
                 for poi in close_visible_pois:
                     distance = calc_distance(poi, pac['position'], scene)
-                    if distance > max_distance:
-                        max_distance = distance
+                    if distance < min_distance:
+                        min_distance = distance
                         selected_poi = poi
                 assert selected_poi is not None
             
@@ -491,7 +493,7 @@ def plan_normal_pellets(pacs_mine, normal_pellets, scene):
         # Fallback
         if selected_target == None:
             pr("RANDOM SELECTION")
-            selected_target = random.choice(scene['un_floor'])
+            selected_target = random.choice(list(scene['un_floor']))
 
         # Assign the target to the pac.   
         pac_targets[pac['id']] = selected_target
@@ -587,7 +589,7 @@ def main():
 
         # Pass 3 - Collect normal pellets.
         available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck)
-        pac_to_normal = plan_normal_pellets(available_pacs, normal_pellets, scene)
+        pac_to_normal = collect_normal_pellets(available_pacs, normal_pellets, scene)
 
         # Pass 4 - Exploration of the unexplored floor.
         available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck, pac_to_normal)

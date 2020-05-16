@@ -16,7 +16,7 @@ MAX_RANDOM_TRIES = 10
 
 def pr(message, variable=None):
     """
-    This is used to print out the value and the name of a variable.
+    Shortcut to print out a message and optionaly the value of a variable .
     """
     if variable is not None:
         print(f"{message}: {variable}", file=sys.stderr)
@@ -278,7 +278,7 @@ def collect_super_pellets(pacs, super_pellets, last, scene):
             return last['super_pellet_plan']
     
 
-def plan_super_pellets(pacs_mine, targets, scene):
+def plan_super_pellets(pacs_mine, super_pellets, scene):
     """
     The planning is done the first time and it is updated only if the count of the 
     super pallets is decreased.
@@ -290,7 +290,7 @@ def plan_super_pellets(pacs_mine, targets, scene):
     """
 
     # Preparation: Cluster the super pellets.
-    clusters = calc_clusters(targets, len(pacs_mine), scene)
+    clusters = calc_clusters(super_pellets, len(pacs_mine), scene)
     assert len(pacs_mine) >= len(clusters)
 
     # Assign a pac to each cluster.
@@ -398,34 +398,34 @@ def find_available_pacs(pacs, pac_to_super, pac_to_unstuck=None, pac_to_normal=N
     return available_pacs
 
 
-def plan_normal_pellets(pacs_mine, targets, scene):
+def plan_normal_pellets(pacs_mine, normal_pellets, scene):
     """
     Each pac is assgined to the closest available normal pellet
     """
 
-    print(f"normal pellets: {targets}", file=sys.stderr)
+    print(f"normal pellets: {normal_pellets}", file=sys.stderr)
 
     pac_targets = {}
 
+    if pacs_mine is None:
+        return pac_targets
+
+    # Assign each pac the furhter available blue that is on the line of sight
+    # If there is none then assign the closest one on the scene.
     
+    targets = scene['']
+    for pac in pacs_mine:
+        
+        
 
-    # Assign each pac to the closes normal pellet.
-    if pacs_mine is not None:
-        for pac in pacs_mine:
-            min_distance = math.inf
-            selected_target = None
-            for target in targets:
-                distance = calc_distance(pac['position'], target, scene)
-                if distance < min_distance:
-                    min_distance = distance
-                    selected_target = target
-            
-            if selected_target is not None:
-                # Assign the target to the pac.   
-                pac_targets[pac['id']] = selected_target
 
-                # Remove the assigned target.
-                targets = [x for x in targets if not x == selected_target]
+        
+        if selected_target is not None:
+            # Assign the target to the pac.   
+            pac_targets[pac['id']] = selected_target
+
+            # Remove the assigned target.
+            normal_pellets = [x for x in normal_pellets if not x == selected_target]
 
     return pac_targets
 

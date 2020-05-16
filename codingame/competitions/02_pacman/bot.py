@@ -7,8 +7,8 @@ import sys
 # Constants
 SUPER_PELLET_VALUE = 10
 MAX_SPEED_TURNS = 5
-WALL = "#"
-FLOOR = " "
+WALL_CHARACTER = "#"
+FLOOR_CHARACTER = " "
 
 MIN_DISTANCE_TO_UNSTUCK = 6
 MAX_RANDOM_TRIES = 10
@@ -28,10 +28,10 @@ def read_scene():
         scene['rows'].append(row)
 
         # Find the floor.
-        scene['floor'].extend([(x, y) for x, c in enumerate(row) if c == FLOOR])
+        scene['floor'].extend([(x, y) for x, c in enumerate(row) if c == FLOOR_CHARACTER])
 
         # Find the loopholes.
-        if row[0] == row[-1] == FLOOR:
+        if row[0] == row[-1] == FLOOR_CHARACTER:
             scene['loops'].append(y)
 
     # Collection of all unexplored floor positions.

@@ -14,11 +14,15 @@ MIN_DISTANCE_TO_UNSTUCK = 6
 MAX_RANDOM_TRIES = 10
 
 
-def pr(variable_name, variable):
+def pr(message, variable=None):
     """
     This is used to print out the value and the name of a variable.
     """
-    print(f"{variable_name}: {variable}", file=sys.stderr)
+    if variable is not None:
+        print(f"{message}: {variable}", file=sys.stderr)
+    else:
+        print(f"{message}", file=sys.stderr)
+
 
 
 def get_neighbors(point, direction=None) -> {}:
@@ -46,7 +50,9 @@ def read_scene():
     The top left corner is the (x=0, y=0)
     """
     width, height = [int(i) for i in input().split()]
-    scene = {'width': width, 'height': height, 'rows': [], 'floor': [], 'wall': [], 'loops': []}
+    scene = {'width': width, 'height': height, 'rows': [], 
+             'floor': [], 'floor_4': [], 'floor_3': [], 'floor_2': [], 
+             'wall': [], 'loops': []}
 
     for y in range(height):
         row = input()
@@ -81,12 +87,34 @@ def read_scene():
 
     # Detect the pois (point of interest)
     # These are the floor with 4 liberties, 3 or 2 but in corner.
-    # floor_4 = []
-    # floor_3 = []
-    # floor_2 = []
-    # for floor in scene['floor']:
-    #     if floor not in [loop_entries, dead_ends]:
-            
+    floor_4 = []
+    floor_3 = []
+    floor_2 = []
+    for floor in scene['floor']:
+        if floor not in [loop_entries, dead_ends]:
+            neighbors = get_neighbors(floor).values()
+            liberties = 0
+            for neighbor in neighbors:
+                if neighbor in scene['floor']:
+                    liberties += 1
+            pr("floor", floor)
+            pr("liberties", liberties)
+            if liberties == 4:
+                floor_4.append(floor)
+            elif liberties == 3:
+                floor_3.append(floor)
+            elif liberties == 2:
+                pass
+                # if neighbors[0][0] != neighbors[1][0] and neighbors[0][1] != neighbors[1][2]:
+                #     floor_2.append(floor)
+
+    scene['floor4'] = floor_4
+    scene['floor3'] = floor_3
+    scene['floor2'] = floor_2
+
+    pr("floor4", floor_4)
+    pr("floor3", floor_3)
+    pr("floor2", floor_2)
 
     return scene
 

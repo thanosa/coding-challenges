@@ -13,6 +13,7 @@ FLOOR_CHARACTER = " "
 MIN_DISTANCE_TO_UNSTUCK = 6
 MAX_RANDOM_TRIES = 10
 MAX_LOOP_TRIES = 20
+POI_LEFT_PERCENTAGE_THRESHOLD = 0.7
 
 
 def pr(message, variable=None):
@@ -407,8 +408,6 @@ def find_available_pacs(pacs, pac_to_super, pac_to_unstuck=None, pac_to_normal=N
     if pac_to_normal is not None:
         available_pacs = [x for x in available_pacs if x['id'] not in pac_to_normal.keys()]
 
-    print(f"available_pacs: {available_pacs}", file=sys.stderr)
-
     return available_pacs
 
 
@@ -424,9 +423,14 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
 
     # Assign each pac the furhter available blue that is on the line of sight
     # If there is none then assign the closest one on the scene.
-    
+    initial_pois = scene['floor_4'] | scene['floor_3'] | scene['floor_2_corner']
     pois = scene['un_floor_4'] | scene['un_floor_3'] | scene['un_floor_2_corner']
     dead_ends = scene['un_floor_1']
+
+    # Calculate the poi exploration percentage.
+    poi_left_percentage = round(len(pois) / len(initial_pois), 3)
+    pr("poi left  %", poi_left_percentage * 100)
+
 
     for pac in pacs_mine:
         # The target has not been achived yet.
@@ -446,23 +450,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
         
         # Create a new plan
         if selected_target is None:
-            if dead_ends:
-                # Move to the closest dead end.
-                min_distance = math.inf
-                selected_dead_end = None
-                for dead_end in dead_ends:
-                    distance = calc_distance(dead_end, pac['position'], scene)
-                    if distance < min_distance:
-                        min_distance = distance
-                        selected_dead_end = dead_end
-                assert selected_dead_end is not None
-
-                # The next pac shoudl not select the same dead end.
-                selected_target = selected_dead_end
-                dead_ends.remove(selected_dead_end)
-                pr("NORMAL - NEW PLAN - DEAD-END: ", selected_target)
-            
-            elif pois:
+            if poi_left_percentage < POI_LEFT_PERCENTAGE_THRESHOLD:
                 # Close visible pois in all directions.
                 close_visible_pois = set()
                 for direction in ['up', 'down', 'left', 'right']:
@@ -507,6 +495,22 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                 selected_target = selected_poi
                 pois.remove(selected_poi)
         
+            elif dead_ends:
+                # Move to the closest dead end.
+                min_distance = math.inf
+                selected_dead_end = None
+                for dead_end in dead_ends:
+                    distance = calc_distance(dead_end, pac['position'], scene)
+                    if distance < min_distance:
+                        min_distance = distance
+                        selected_dead_end = dead_end
+                assert selected_dead_end is not None
+
+                # The next pac shoudl not select the same dead end.
+                selected_target = selected_dead_end
+                dead_ends.remove(selected_dead_end)
+                pr("NORMAL - NEW PLAN - DEAD-END: ", selected_target)
+
         # Fallback
         if selected_target == None:
             pr("NORMA - !!! RANDOM !!! RANDOM !!! RANDOM !!!")
@@ -516,36 +520,6 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
         pac_targets[pac['id']] = selected_target
 
     return pac_targets
-
-
-def explore_floor(pacs_mine, scene):
-    """
-    The pacs are sent the most distant floor of the unexplored area.
-    """
-    pac_target = {}
-    
-    unexplored = scene['un_floor']
-
-    if len(unexplored) > 0:
-        targets = unexplored
-        for pac in pacs_mine:
-            min_distance = math.inf
-            selected_target = None
-            for target in targets:
-                distance = calc_distance(pac['position'], target, scene)
-                if distance < min_distance:
-                    min_distance = distance
-                    selected_target = target
-
-            assert selected_target is not None
-
-            # Assign the target to the pac.   
-            pac_target[pac['id']] = selected_target
-
-            # Remove the assigned target.
-            targets = [x for x in targets if not x == selected_target]
-    
-    return pac_target
 
 
 def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal, pac_to_explore):
@@ -609,10 +583,6 @@ def main():
         available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck)
         pac_to_normal = collect_normal_pellets(available_pacs, normal_pellets, last, scene)
 
-        # Pass 4 - Exploration of the unexplored floor.
-        available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck, pac_to_normal)
-        pac_to_explore = explore_floor(available_pacs, scene)
-
         # Merge the pac targets.
         print(f"pac to super  : {pac_to_super}", file=sys.stderr)
         print(f"pac to unstack: {pac_to_unstuck}", file=sys.stderr)
@@ -637,8 +607,6 @@ def main():
         last['normal_pellet_plan'] = pac_to_normal
         last['pacs_mine'] = copy.deepcopy(pacs['mine'])
         
-        print(f"last normal_pellet_plan: {last['normal_pellet_plan']}", file=sys.stderr)
-
 
 # Entry point.
 main()

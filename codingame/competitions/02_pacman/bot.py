@@ -13,6 +13,14 @@ FLOOR_CHARACTER = " "
 MIN_DISTANCE_TO_UNSTUCK = 6
 MAX_RANDOM_TRIES = 10
 
+
+def pr(variable_name, variable):
+    """
+    This is used to print out the value and the name of a variable.
+    """
+    print(f"{variable_name}: {variable}", file=sys.stderr)
+
+
 def read_scene():
     """
     Reads the scene.
@@ -21,7 +29,7 @@ def read_scene():
     The top left corner is the (x=0, y=0)
     """
     width, height = [int(i) for i in input().split()]
-    scene = {'width': width, 'height': height, 'rows': [], 'floor': [], 'loops': []}
+    scene = {'width': width, 'height': height, 'rows': [], 'floor': [], 'wall': [], 'loops': []}
 
     for y in range(height):
         row = input()
@@ -29,13 +37,35 @@ def read_scene():
 
         # Find the floor.
         scene['floor'].extend([(x, y) for x, c in enumerate(row) if c == FLOOR_CHARACTER])
+        scene['wall'].extend([(x, y) for x, c in enumerate(row) if c == WALL_CHARACTER])
 
-        # Find the loopholes.
+        pr("row", row)
+        # Find the loops.
         if row[0] == row[-1] == FLOOR_CHARACTER:
             scene['loops'].append(y)
 
     # Collection of all unexplored floor positions.
     scene['unexplored'] = copy.deepcopy(scene['floor'])
+
+    # Analyze scene to detect the pois (points of interest)
+    loop_entries = [(x, y) for x in [0, width - 1] for y in scene['loops']]
+
+    dead_ends = []
+    for floor in scene['floor']:
+        if floor not in loop_entries:
+            up = (floor[0] - 1, floor[1]) in scene['wall']
+            down = (floor[0] + 1, floor[1]) in scene['wall']
+            left = (floor[0], floor[1] - 1) in scene['wall']
+            right = (floor[0], floor[1] + 1) in scene['wall']
+
+            # Tricky way to convert a boolean to 0 or 1.
+            wall_count = up * 1 + down * 1 + left * 1 + right * 1
+
+            if wall_count == 3:
+                dead_ends.append(floor) 
+    scene['dead_ends'] = dead_ends
+
+    pr("dead_ends", dead_ends)
 
     return scene
 

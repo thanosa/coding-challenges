@@ -1,35 +1,23 @@
-- Enhacement of normal pallet collection
-    - The noraml pellets should be split to the pac that sees them
-    - Each pac should collect the pellets it sees
-        - The pac should select the most distant pellet in the the line of sight !!!
-    - Every pellet that is not collected is added to a stack
-    - If the pac doesn't see any pellets
-        - If the stack is not empty it should go back and check
-    
-    - The pac that sees normal pellets should get one side
+- Scene analysis
+    - Identify dead-end floor
+        - if it has 1 liberty or 2 liberties but it is next to a dead-end (not recursively)
 
-- Enhancement of the unexplored area
+- Normal pellect 
+
+- Optimization for the unexplored area.
     - The unexplored should shrink by the floor that is viewable and empty !!!
 
-
-- Enhancement of the exploration
-    The pac should prefer:
-        - The connected paths versus the dead-ends
-            - A floor is a dead-end if it has 1 liberty or 2 liberties but it is next to a dead-end
-        - The spots with the longest line of sight in all directions
-
-- Enhacement of collisions
-    Advanced:
-        FRIENDS:
-            If they target the same square 
-                1. one should go there 
-                2. the rest should retreat
-            If they have different targets
-                1. They should swap their targets
-        
-        ENEMIES
-            When our pac collides with an enemy pac, 
-                if we win in score -> we should follow the same strategy as with our pacs
-                if we lose in score
-                    if super pellet -> stay
-                    if normal pellet -> leave (where?)
+- Collisions enhancements
+    FRIENDS
+        If they target the same square 
+            1. one should go there 
+            2. the rest should retreat
+        If they have different targets
+            1. They should swap their targets
+    
+    ENEMIES
+        When our pac collides with an enemy pac, 
+            if we win in score -> we should follow the same strategy as with our pacs
+            if we lose in score
+                if super pellet -> stay
+                if normal pellet -> leave (where?)

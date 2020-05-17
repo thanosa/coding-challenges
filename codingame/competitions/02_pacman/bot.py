@@ -11,7 +11,7 @@ WALL_CHARACTER = "#"
 FLOOR_CHARACTER = " "
 
 # Globals
-COMMANDS = []
+COMMANDS = None
 
 # Configuration
 MIN_DISTANCE_TO_UNSTUCK = 6
@@ -672,6 +672,8 @@ def add_command(command, pac_id, arg=None):
         switch_to_type = advice_rps(pac_their_type)
         COMMANDS.append(f"SWITCH {pac_id} {switch_to_type} {switch_to_type}")
 
+    pr("LENGTH of COMMANDS", len(COMMANDS))
+
 
 def execute_commands(pacs, pac_targets, scene):
     """
@@ -787,7 +789,10 @@ def main():
     turn = 0
     while True:
         # Reset commands
+        global COMMANDS 
         COMMANDS = []
+
+        pr("DEBUG commands:", COMMANDS)
 
         # Read score.
         score = {}

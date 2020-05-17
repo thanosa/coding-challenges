@@ -397,36 +397,35 @@ def plan_super_pellets(pacs_mine, super_pellets, scene):
     The plan is done once and is updated only if the count of the 
     super pallets is decreased.
 
-    Each cluster is assigned to the closest pac and that pac will move to the closest 
-    super pellet of the assigned cluster.
+    Each pac is moving to the closest super pellet 
+    and the rest super pellets of its cluster are left available.
     """
 
     # Preparation: Cluster the super pellets.
     clusters = calc_clusters(super_pellets, len(pacs_mine), scene)
     assert len(pacs_mine) >= len(clusters)
-
-    # Assign a pac to each cluster.
     
     # Create saved deep copies.
     clusters_saved = copy.deepcopy(clusters)
 
     pac_targets = {}
 
-    for cluster in clusters:
-
+    while clusters:
         min_distance = math.inf
         selected_pac = None
-        selected_cluster = None
         selected_target = None
+        selected_cluster = None
 
-        for target in cluster:
+        for target in super_pellets:
             for pac in pacs_mine:
                 distance = calc_distance(pac['position'], target, scene)
                 if distance < min_distance:
                     min_distance = distance
                     selected_pac = pac
-                    selected_cluster = cluster
                     selected_target = target
+                    for cluster in clusters:
+                        if target in cluster:
+                            selected_cluster = cluster
 
         assert selected_pac is not None
         assert selected_cluster is not None

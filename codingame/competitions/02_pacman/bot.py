@@ -346,30 +346,53 @@ def calc_clusters(targets, pac_count, scene):
     """
     The super pellets are clustered one by one until they reach the number of pacs.
     """
-    # Initialize the clusters as one-to-one with the targets.
-    clusters = [[x] for x in targets]
-
+    
     print(f"target: {len(targets)}, pacs: {pac_count}", file=sys.stderr)
 
-    if len(clusters) > pac_count:
-        print(f"pac, clusters count: {pac_count}, {len(clusters)}", file=sys.stderr)
+    if len(targets) > pac_count:
+
         
         # Calculate the super pellet to super pellet distances.
         distances_set, distances_dict = calc_t2t_distances(targets, scene)
 
+        # Initialize the clusters as one-to-one with the targets.
+        clusters = [[x] for x in targets]
+
+        pr("targets", targets)
+
         # Clustering the targets one-by-one until they become as much as my pacs.
         for _ in range(len(clusters) - pac_count):
             pair_to_join = min(distances_dict, key=(lambda key: distances_dict[key]))
-            print(f"pair to join: {pair_to_join}", file=sys.stderr)
+            pr("pair to join", pair_to_join)
 
             # Update of the distances matrix
             del distances_dict[pair_to_join]
 
             # Actual merge of the clustering
+            pr("DEBUG: Clusters before merge", clusters)
+
+            # Find the two clusters the pairs belong to.
+            clusters_to_join = []
+            for i in range(2):
+                for cluster in clusters:
+                    if pair_to_join[i] in cluster:
+                        clusters_to_join.append(cluster)
+                        break
+            
+            # Create the new cluster
+            new_cluster = []
+            for cluster in clusters_to_join:
+                for floor in cluster:
+                    new_cluster.append(floor)
+            
+            # Remove the individual parts from the existing clusters
             clusters = [x for x in clusters if (x[0] != pair_to_join[0]) and (x[0] != pair_to_join[1])]
-            clusters.append([x for x in pair_to_join])
+
+            # Add the new cluster to the clusters.
+            clusters.append(new_cluster)
+            pr("DEBUG: Clusters after merge ", clusters)
     
-    print(f"clusters: {clusters}", file=sys.stderr)
+    pr("clusters:", clusters)
 
     return clusters
 

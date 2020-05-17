@@ -455,8 +455,6 @@ def resolve_stucks(current_pacs, last, scene):
     pac_to_unstuck = {}
     unexplored = scene['un_floor']
     
-    pr("DEBUG", current_pacs)
-
     for pac_now in current_pacs:
         for pac_last in last_pacs:
             if pac_now['position'] == pac_last['position'] and pac_now['speed_turns_left'] != MAX_SPEED_TURNS:
@@ -544,6 +542,14 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
 
             # Select the pois based on the left %.
             pois = None
+
+            pr("floor_4_left_percentage", floor_4_left_percentage)
+            pr("FLOOR_4_PERCENTAGE_THRESHOLD", FLOOR_4_PERCENTAGE_THRESHOLD)
+            pr("floor_3_left_percentage", floor_3_left_percentage)
+            pr("FLOOR_3_PERCENTAGE_THRESHOLD", FLOOR_3_PERCENTAGE_THRESHOLD)
+            pr("floor_2_left_percentage", floor_2_left_percentage)
+            pr("FLOOR_2_PERCENTAGE_THRESHOLD", FLOOR_2_PERCENTAGE_THRESHOLD)
+
             if floor_4_left_percentage > FLOOR_4_PERCENTAGE_THRESHOLD:
                 pr("Using un_floor_4")
                 pois = scene['un_floor_4']
@@ -573,7 +579,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                     if last_valid_poi is not None:
                         close_visible_pois.add(last_valid_poi)
 
-                # From the close visible pois, select the furthest one.
+                # From the close visible pois, select the closest one.
                 if close_visible_pois:
                     min_distance = math.inf
                     for poi in close_visible_pois:
@@ -667,8 +673,6 @@ def add_command(command, pac_id, arg=None):
         pac_their_type = arg
         switch_to_type = advice_rps(pac_their_type)
         COMMANDS.append(f"SWITCH {pac_id} {switch_to_type} {switch_to_type}")
-
-    pr("LENGTH of COMMANDS", len(COMMANDS))
 
 
 def execute_commands(pacs, pac_targets, scene):

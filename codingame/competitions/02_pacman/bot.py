@@ -344,7 +344,7 @@ def calc_t2t_distances(targets, scene):
 
 def calc_clusters(targets, pac_count, scene):
     """
-    The number of clusters should not be more than my pacs.
+    The super pellets are clustered one by one until they reach the number of pacs.
     """
     # Initialize the clusters as one-to-one with the targets.
     clusters = [[x] for x in targets]
@@ -397,9 +397,8 @@ def plan_super_pellets(pacs_mine, super_pellets, scene):
     The plan is done once and is updated only if the count of the 
     super pallets is decreased.
 
-    The super pellets are clustered one by one until they reach the number of pacs.
     Each cluster is assigned to the closest pac and that pac will move to the closest 
-    supper pellet of the assigned cluster.
+    super pellet of the assigned cluster.
     """
 
     # Preparation: Cluster the super pellets.
@@ -760,7 +759,7 @@ def execute_commands(pacs, pac_targets, scene):
             add_command("SPEED", pac_mine['id'])
             continue
         else:
-            pr("maturity is high so prefer to not speed")
+            pr("maturity is high so prefer not speeding")
             pr("game_maturity", game_maturity)
             pr("MOVE to target", pac_targets[pac_mine['id']])
             add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])

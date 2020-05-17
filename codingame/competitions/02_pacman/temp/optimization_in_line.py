@@ -1,2 +1,0 @@
-            # These are the targets on the same row or column. Used for performance only.
-            # # aligned_un_targets = [t for t in un_targets if t[0] == pac['position'][0] or t[1] == pac['position'][1]]

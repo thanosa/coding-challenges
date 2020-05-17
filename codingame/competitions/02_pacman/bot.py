@@ -374,7 +374,7 @@ def calc_clusters(targets, pac_count, scene):
     return clusters
 
 
-def collect_super_pellets(pacs, super_pellets, last, scene):
+def collect_super_pellets(pacs_mine, super_pellets, last, scene):
     """
     Collects the super pellets as first priority
     """
@@ -385,10 +385,10 @@ def collect_super_pellets(pacs, super_pellets, last, scene):
         super_pellets_decreased = len(super_pellets) < last['super_pellet_count']
 
         if there_is_no_super_pellet_plan or super_pellets_decreased:
-            print("SUPER - NEW PLAN", file=sys.stderr)
-            return plan_super_pellets(pacs['mine'], super_pellets, scene)
+            pr("SUPER - CREATE NEW")
+            return plan_super_pellets(pacs_mine, super_pellets, scene)
         else:
-            print("SUPER - USE LAST", file=sys.stderr)
+            pr("SUPER - USE LAST")
             return last['super_pellet_plan']
     
 
@@ -454,6 +454,8 @@ def resolve_stucks(current_pacs, last, scene):
 
     pac_to_unstuck = {}
     unexplored = scene['un_floor']
+    
+    pr("DEBUG", current_pacs)
 
     for pac_now in current_pacs:
         for pac_last in last_pacs:
@@ -484,24 +486,18 @@ def resolve_stucks(current_pacs, last, scene):
     return pac_to_unstuck
 
 
-def find_available_pacs(pacs, pac_to_super, pac_to_unstuck=None, pac_to_normal=None):
+def find_available_pacs(pacs, pac_to_unstuck=None, pac_to_super=None, pac_to_normal=None):
     """
     Finds the available pacs that are not assigned
     """
 
-    # for pac in pacs['mine']:
-    #     print(f"pac mine: {pac}", file=sys.stderr)
-    # print(f"pac_to_super  : {pac_to_super}", file=sys.stderr)
-    # print(f"pac_to_unstuck: {pac_to_unstuck}", file=sys.stderr)
-    # print(f"pac_to_normal : {pac_to_normal}", file=sys.stderr)
-
     available_pacs = pacs['mine']
-
-    if pac_to_super is not None:
-        available_pacs = [x for x in pacs['mine'] if x['id'] not in pac_to_super.keys()]
 
     if pac_to_unstuck is not None:
         available_pacs = [x for x in available_pacs if x['id'] not in pac_to_unstuck.keys()]
+    
+    if pac_to_super is not None:
+        available_pacs = [x for x in available_pacs if x['id'] not in pac_to_super.keys()]
     
     if pac_to_normal is not None:
         available_pacs = [x for x in available_pacs if x['id'] not in pac_to_normal.keys()]
@@ -792,8 +788,6 @@ def main():
         global COMMANDS 
         COMMANDS = []
 
-        pr("DEBUG commands:", COMMANDS)
-
         # Read score.
         score = {}
         score['mine'], score['their'] = [int(i) for i in input().split()]
@@ -812,15 +806,16 @@ def main():
         # Read pellets.
         pellet_count, super_pellets, normal_pellets = read_pellets()
 
-        # Pass 1 - Collect super pellets
-        pac_to_super = collect_super_pellets(pacs, super_pellets, last, scene)
-
-        # Pass 2 - Resolve stucks
-        available_pacs = find_available_pacs(pacs, pac_to_super)
+        # Pass 1 - Resolve stucks
+        available_pacs = find_available_pacs(pacs)
         pac_to_unstuck = resolve_stucks(available_pacs, last, scene)
 
+        # Pass 2 - Collect super pellets
+        available_pacs = find_available_pacs(pacs, pac_to_unstuck)
+        pac_to_super = collect_super_pellets(available_pacs, super_pellets, last, scene)
+
         # Pass 3 - Collect normal pellets.
-        available_pacs = find_available_pacs(pacs, pac_to_super, pac_to_unstuck)
+        available_pacs = find_available_pacs(pacs, pac_to_unstuck, pac_to_super)
         pac_to_normal = collect_normal_pellets(available_pacs, normal_pellets, last, scene)
 
         # Merge the pac targets.

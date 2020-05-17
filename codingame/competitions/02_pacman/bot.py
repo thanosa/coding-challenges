@@ -690,7 +690,7 @@ def execute_commands(pacs, pac_targets, scene):
         if pac_mine['ability_cooldown'] > 0:
             pr("no ability available so we move to", pac_targets[pac_mine['id']])
             add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
-            next
+            continue
         else:
             pr("abilities are availble")
             if len(pacs['their']) > 0:
@@ -699,9 +699,6 @@ def execute_commands(pacs, pac_targets, scene):
                 selected_enemy = None
                 for pac_their in pacs['their']:
                     proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
-                    pr("calculated proximity", pac_mine['position'])
-                    pr("calculated proximity", pac_their['position'])
-                    pr("calculated proximity", proximity)
                     if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
                         win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
                         if win_rps:
@@ -719,7 +716,7 @@ def execute_commands(pacs, pac_targets, scene):
                         pr("selected_enemy['type_id']", selected_enemy['type_id'])
                         pr("SPEED since it is FACE TO FACE", selected_enemy['position'])
                         add_command("SPEED", pac_mine['id'])
-                        next
+                        continue
                     else:
                         pr("closest COMPATIBLE enemy selected", selected_enemy)
                         pr("min_proximity", min_proximity)
@@ -729,7 +726,7 @@ def execute_commands(pacs, pac_targets, scene):
                         pr("selected_enemy['type_id']", selected_enemy['type_id'])
                         pr("ATTACK since it is NOT face to face", selected_enemy['position'])
                         add_command("MOVE", pac_mine['id'], selected_enemy['position'])
-                        next
+                        continue
                 else:
                     pr("No compatible enemy to hunt")
 
@@ -754,7 +751,7 @@ def execute_commands(pacs, pac_targets, scene):
                     pr("selected_enemy['type_id']", selected_enemy['type_id'])
                     pr("SWITCH as we are incompatible", selected_enemy['position'])
                     add_command("SWITCH", pac_mine['id'], pac_their['type_id'])
-                    next
+                    continue
                 else:
                     pr("No incompatible enemy to switch")
 
@@ -762,13 +759,13 @@ def execute_commands(pacs, pac_targets, scene):
             if game_maturity < GAME_MATURITY_FOR_SPEEDS:
                 pr("SPEED abuse as maturity is low", game_maturity)
                 add_command("SPEED", pac_mine['id'])
-                next
+                continue
             else:
                 pr("maturity is high so prefer to not speed")
                 pr("game_maturity", game_maturity)
                 pr("MOVE to target", pac_targets[pac_mine['id']])
                 add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
-                next
+                continue
 
     # Execute the commands
     print("  |  ".join(COMMANDS))

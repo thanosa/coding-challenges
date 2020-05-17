@@ -430,6 +430,7 @@ def plan_super_pellets(pacs_mine, super_pellets, scene):
         selected_target = None
         selected_cluster = None
 
+
         for target in super_pellets:
             for pac in pacs_mine:
                 distance = calc_distance(pac['position'], target, scene)
@@ -437,9 +438,10 @@ def plan_super_pellets(pacs_mine, super_pellets, scene):
                     min_distance = distance
                     selected_pac = pac
                     selected_target = target
-                    for cluster in clusters:
-                        if target in cluster:
-                            selected_cluster = cluster
+        
+        for cluster in clusters:
+            if selected_target in cluster:
+                selected_cluster = cluster
 
         assert selected_pac is not None
         assert selected_cluster is not None
@@ -448,11 +450,15 @@ def plan_super_pellets(pacs_mine, super_pellets, scene):
         # Assign the target to the pac.   
         pac_targets[selected_pac['id']] = selected_target
 
-        # Remove the assigned pac.
+        # Remove the selected pac.
         pacs_mine = [x for x in pacs_mine if not (x.get('id') == selected_pac['id'])]
 
-        # Remove the assigned cluster.
+        # Remove the selected cluster.
         clusters = [x for x in clusters if not x == selected_cluster]
+
+        # Remove the super pellets that belong to the selected cluster.
+        for target in selected_cluster:
+            super_pellets.remove(target)
 
     return pac_targets
 

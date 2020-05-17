@@ -349,14 +349,13 @@ def calc_clusters(targets, pac_count, scene):
     
     print(f"target: {len(targets)}, pacs: {pac_count}", file=sys.stderr)
 
-    if len(targets) > pac_count:
+    # Initialize the clusters as one-to-one with the targets.
+    clusters = [[x] for x in targets]
 
+    if len(targets) > pac_count:
         
         # Calculate the super pellet to super pellet distances.
         distances_set, distances_dict = calc_t2t_distances(targets, scene)
-
-        # Initialize the clusters as one-to-one with the targets.
-        clusters = [[x] for x in targets]
 
         # Clustering the targets one-by-one until they become as much as my pacs.
         for _ in range(len(clusters) - pac_count):

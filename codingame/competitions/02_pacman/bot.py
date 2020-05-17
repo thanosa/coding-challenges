@@ -20,7 +20,7 @@ MAX_LOOP_TRIES = 20
 FLOOR_4_PERCENTAGE_THRESHOLD = 0.6
 FLOOR_3_PERCENTAGE_THRESHOLD = 0.7
 FLOOR_2_PERCENTAGE_THRESHOLD = 0.8
-GAME_MATURITY_FOR_SPEEDS = 0.40
+GAME_MATURITY_FOR_SPEEDS = -0.40
 MAX_PROXIMITY_TO_SWITCH = 7
 MAX_PROXIMITY_TO_HUNT = 12
 MAX_DISTANCE_TO_SPEED = 5
@@ -99,7 +99,7 @@ def pacs_proximity(pac1, pac2, pacs, scene) -> int:
             return floor_in_between
         else:
             # Check if any intermediate point is wall or a pac.
-            for x in range(min_y + 1, max_y):
+            for y in range(min_y + 1, max_y):
                 if (x, y) in obstacles:
                     return -1
             return floor_in_between

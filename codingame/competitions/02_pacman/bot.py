@@ -10,6 +10,9 @@ MAX_SPEED_TURNS = 5
 WALL_CHARACTER = "#"
 FLOOR_CHARACTER = " "
 
+# Globals
+COMMANDS = []
+
 # Configuration
 MIN_DISTANCE_TO_UNSTUCK = 6
 MAX_RANDOM_TRIES = 10
@@ -17,6 +20,10 @@ MAX_LOOP_TRIES = 20
 FLOOR_4_PERCENTAGE_THRESHOLD = 0.6
 FLOOR_3_PERCENTAGE_THRESHOLD = 0.7
 FLOOR_2_PERCENTAGE_THRESHOLD = 0.8
+GAME_MATURITY_FOR_SPEEDS = 0.40
+MAX_PROXIMITY_TO_SWITCH = 7
+MAX_PROXIMITY_TO_HUNT = 12
+MAX_DISTANCE_TO_SPEED = 5
 
 
 def pr(message, variable=None):
@@ -46,51 +53,59 @@ def get_neighbors(point, direction=None) -> {}:
         return neighbors[direction]
 
 
-def pacs_see_each_other(pac1, pac2, pacs, scene) -> bool:
+def pacs_proximity(pac1, pac2, pacs, scene) -> int:
     """
-    Checks if two points are visible.
+    Checks if two pacs see each other.
+        -1: Pacs are not seeing each other
+         0: Pacs are face-to-face
+       N>0: Pacs see each other with N floor in between them.
+
+       Loops are not taken into consideration as confronting 
+       exacting on a loop door is rare.
     """
     my_pac_positions = {x['position'] for x in pacs['mine']}
     their_pac_positions = {x['position'] for x in pacs['their']}
     obstacles = scene['wall'] | my_pac_positions | their_pac_positions
 
-    horizontal = pac1[0] == pac2[0]
-    vertical = pac1[1] == pac2[1]
+    horizontal = pac1[1] == pac2[1]
+    vertical = pac1[0] == pac2[0]
 
     # The are not in the same row or column.
     if not horizontal and not vertical:
-        return False
+        return -1
     elif horizontal:
         y = pac1[1]
         min_x = min(pac1[0], pac2[0])
         max_x = max(pac1[0], pac2[0])
 
-        # They are next to each other.
-        if abs(min_x - max_x) == 1:
-            return True
+        # They are face-to-face.
+        floor_in_between = (max_x - min_x) - 1
+        if floor_in_between == 0:
+            return floor_in_between
         else:
             # Check if any intermediate point is wall or a pac.
             for x in range(min_x + 1, max_x):
                 if (x, y) in obstacles:
-                    return False
-            return True
+                    return -1
+            return floor_in_between
     elif vertical:
         x = pac1[0]
         min_y = min(pac1[1], pac2[1])
         max_y = max(pac1[1], pac2[1])
 
         # They are next to each other.
-        if abs(min_y - max_y) == 1:
-            return True
+        floor_in_between = (max_y - min_y) - 1
+        if floor_in_between == 0:
+            return floor_in_between
         else:
             # Check if any intermediate point is wall or a pac.
             for x in range(min_y + 1, max_y):
                 if (x, y) in obstacles:
-                    return False
-            return True
+                    return -1
+            return floor_in_between
 
 
-def play_rock_paper_scissors(pac_mine_type, pac_their_type) -> int:
+def play_rps(pac_mine_type, pac_their_type) -> int:
     """
     Return the outcome of the Rock Papper Scissors game.
          1: win
@@ -114,6 +129,20 @@ def play_rock_paper_scissors(pac_mine_type, pac_their_type) -> int:
             return 1
         else:
             return -1
+
+
+def advice_rps(pac_their_type) -> str:
+    """
+    Gets a pac type and returns the one that wins it.
+    """
+    assert pac_their_type in ["ROCK", "PAPER", "SCISSORS"]
+
+    if pac_their_type == "ROCK":
+        return "PAPER"
+    elif pac_their_type == "PAPER":
+        return "SCISSORS"
+    elif pac_their_type == "SCISSORS":
+        return "ROCK"
 
 
 def read_scene():
@@ -512,7 +541,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
             # Initialize the poi
             selected_poi = None
 
-            # Calculate the % left of each poi category.
+            # Calculate the % left of each floor category.
             floor_4_left_percentage = round(len(scene['un_floor_4']) / len(scene['floor_4']), 1)
             floor_3_left_percentage = round(len(scene['un_floor_3']) / len(scene['floor_3']), 1)
             floor_2_left_percentage = round(len(scene['un_floor_2_corner']) / len(scene['floor_2_corner']), 1)
@@ -624,37 +653,125 @@ def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal):
     return pac_targets
 
 
-def generate_execute_commands(pacs, pac_targets, scene):
+def add_command(command, pac_id, arg=None):
+    """
+    Create a commend string according to the game protocol
+    """
+
+    assert command in ["MOVE", "SPEED", "SWITCH"]
+
+    if command == "MOVE":
+        target = arg
+        COMMANDS.append(f"MOVE {pac_id} {target[0]} {target[1]} ({target[0]},{target[1]})")
+
+    elif command == "SPEED":
+        COMMANDS.append(f"SPEED {pac_id} SPEED")
+
+    elif command == "SWITCH":
+        pac_their_type = arg
+        switch_to_type = advice_rps(pac_their_type)
+        COMMANDS.append(f"SWITCH {pac_id} {switch_to_type} {switch_to_type}")
+
+
+def execute_commands(pacs, pac_targets, scene):
     """
     Generate and execute the commands.
-    Each time there the switch is available we change if there is any visible enemy.
-    If there is we switch, speed and target them.
     """
-    commands = []
+
+    # Calculate game maturity
+    game_maturity = round(1 - (len(scene['un_floor']) / len(scene['floor'])), 1)
+    pr("game_maturity", game_maturity)
+    pr("visible enemies", pacs['their'])
+
     for pac_mine in pacs['mine']:
+        pr(" ")
         pr("pac", pac_mine)
         
-        if pac_mine['speed_turns_left'] == 0:
-            if len(pacs['their']) == 0:
-                commands.append(f"SPEED {pac_mine['id']} SPEED")
-            else:
-                for pac_their in pacs['their']:
-                    if pacs_see_each_other(pac_mine['position'], pac_their['position'], pacs, scene):
-                        pr("PACS see each other", pac_mine['position'])
-                        pr("PACS see each other", pac_their['position'])
-
-                    else:
-                        pr("PACS DON'T see each other", pac_mine['position'])
-                        pr("PACS DON'T see each other", pac_their['position'])
-
-
-                commands.append(f"SPEED {pac_mine['id']} SPEED")
+        if pac_mine['ability_cooldown'] > 0:
+            pr("no ability available so we move to", pac_targets[pac_mine['id']])
+            add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
+            next
         else:
-            target = pac_targets[pac_mine['id']]
-            commands.append(f"MOVE {pac_mine['id']} {target[0]} {target[1]} ({target[0]},{target[1]})")
+            pr("abilities are availble")
+            if len(pacs['their']) > 0:
+                # Find the closest compatible enemy to hunt (SPEED / MOVE).
+                min_proximity = math.inf
+                selected_enemy = None
+                for pac_their in pacs['their']:
+                    proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+                    pr("calculated proximity", pac_mine['position'])
+                    pr("calculated proximity", pac_their['position'])
+                    pr("calculated proximity", proximity)
+                    if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
+                        win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
+                        if win_rps:
+                            pr("we WIN in rps")
+                            if proximity < min_proximity:
+                                min_proximity = proximity
+                                selected_enemy = pac_their
+                if selected_enemy is not None:
+                    if proximity != 0 and pac_mine['speed_turns_left'] == 0:
+                        pr("closest COMPATIBLE enemy selected", selected_enemy)
+                        pr("min_proximity", min_proximity)
+                        pr("pac_mine['position']", pac_mine['position'])
+                        pr("selected_enemy['position']", selected_enemy['position'])
+                        pr("pac_mine['type_id']", pac_mine['type_id'])
+                        pr("selected_enemy['type_id']", selected_enemy['type_id'])
+                        pr("SPEED since it is FACE TO FACE", selected_enemy['position'])
+                        add_command("SPEED", pac_mine['id'])
+                        next
+                    else:
+                        pr("closest COMPATIBLE enemy selected", selected_enemy)
+                        pr("min_proximity", min_proximity)
+                        pr("pac_mine['position']", pac_mine['position'])
+                        pr("selected_enemy['position']", selected_enemy['position'])
+                        pr("pac_mine['type_id']", pac_mine['type_id'])
+                        pr("selected_enemy['type_id']", selected_enemy['type_id'])
+                        pr("ATTACK since it is NOT face to face", selected_enemy['position'])
+                        add_command("MOVE", pac_mine['id'], selected_enemy['position'])
+                        next
+                else:
+                    pr("No compatible enemy to hunt")
+
+                # Find the closest incompatible enemy to switch against it.
+                min_proximity = math.inf
+                selected_enemy = None
+                for pac_their in pacs['their']:
+                    proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+                    if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
+                        win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
+                        if not win_rps:
+                            pr("we DONT WIN in rps")
+                            if proximity < min_proximity:
+                                min_proximity = proximity
+                                selected_enemy = pac_their
+                if selected_enemy is not None:
+                    pr("closest INCOMPATIBLE enemy selected", selected_enemy)
+                    pr("min_proximity", min_proximity)
+                    pr("pac_mine['position']", pac_mine['position'])
+                    pr("selected_enemy['position']", selected_enemy['position'])
+                    pr("pac_mine['type_id']", pac_mine['type_id'])
+                    pr("selected_enemy['type_id']", selected_enemy['type_id'])
+                    pr("SWITCH as we are incompatible", selected_enemy['position'])
+                    add_command("SWITCH", pac_mine['id'], pac_their['type_id'])
+                    next
+                else:
+                    pr("No incompatible enemy to switch")
+
+            pr("No aggressive actions can be taken")
+            if game_maturity < GAME_MATURITY_FOR_SPEEDS:
+                pr("SPEED abuse as maturity is low", game_maturity)
+                add_command("SPEED", pac_mine['id'])
+                next
+            else:
+                pr("maturity is high so prefer to not speed")
+                pr("game_maturity", game_maturity)
+                pr("MOVE to target", pac_targets[pac_mine['id']])
+                add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
+                next
 
     # Execute the commands
-    print("  |  ".join(commands))
+    print("  |  ".join(COMMANDS))
 
 
 def main():
@@ -672,6 +789,8 @@ def main():
     # Game loop.
     turn = 0
     while True:
+        # Reset commands
+        COMMANDS = []
 
         # Read score.
         score = {}
@@ -710,7 +829,7 @@ def main():
         pr("pac targets", pac_targets)
         
         # Generate and execute the commands
-        generate_execute_commands(pacs, pac_targets, scene)
+        execute_commands(pacs, pac_targets, scene)
         
         # Update the cross turn variables.
         last['super_pellet_count'] = len(super_pellets)

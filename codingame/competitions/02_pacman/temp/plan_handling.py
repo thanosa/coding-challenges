@@ -1,12 +1,1 @@
-    """
-    The planning for each pac is done once and it is updated until it is achieved.
-    """
-    # There is no plan or super pellets have been captured.
-    there_is_no_normal_pellet_plan = last['normal_pellet_plan'] == None
-
-    if there_is_no_normal_pellet_plan:
-        print("collect normal pellet - NEW PLAN", file=sys.stderr)
-        return plan_normal_pellets(pacs_mine, normal_pellets, scene)
-    else:
-        print("collect normal pellet - USE LAST", file=sys.stderr)
-        return last['normal_pellet_plan']
+normal pellets: [(12, 3), (11, 3), (10, 3), (9, 3), (14, 3), (15, 3), (16, 3), (17, 3), (18, 3), (19, 3), (20, 3), (21, 3), (22, 3), (23, 3), (24, 3), (25, 3), (13, 8), (13, 9), (13, 10), (13, 11), (13, 12), (13, 13), (22, 7), (23, 7), (21, 4), (21, 2), (21, 1), (21, 10), (21, 11), (21, 12), (21, 13), (4, 7), (5, 7)]

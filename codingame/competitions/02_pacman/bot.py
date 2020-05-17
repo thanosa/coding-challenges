@@ -22,7 +22,7 @@ FLOOR_3_PERCENTAGE_THRESHOLD = 0.7
 FLOOR_2_PERCENTAGE_THRESHOLD = 0.8
 GAME_MATURITY_FOR_SPEEDS = -0.40
 MAX_PROXIMITY_TO_SWITCH = 7
-MAX_PROXIMITY_TO_HUNT = 12
+MAX_PROXIMITY_TO_HUNT = 3
 MAX_DISTANCE_TO_SPEED = 5
 
 
@@ -455,7 +455,12 @@ def resolve_stucks(current_pacs, last, scene):
     
     for pac_now in current_pacs:
         for pac_last in last_pacs:
-            if pac_now['position'] == pac_last['position'] and pac_now['speed_turns_left'] != MAX_SPEED_TURNS:
+
+            same_position = pac_now['position'] == pac_last['position']
+            same_type = pac_now['type_id'] == pac_last['type_id']
+            no_max_speed_turns = pac_now['speed_turns_left'] != MAX_SPEED_TURNS
+
+            if same_position and same_type and no_max_speed_turns:
                 if len(unexplored) > 0:
                     # Choose the first random unexplored floor that further than threshold.
                     pr("UNSTUCK CASE 1")
@@ -704,15 +709,15 @@ def execute_commands(pacs, pac_targets, scene):
                         min_proximity = proximity
                         selected_enemy = pac_their
         if selected_enemy is not None:
-            if proximity != 0 and pac_mine['ability_cooldown'] > 0:
+            if proximity == 0 or (proximity > 0 and pac_mine['ability_cooldown'] > 0):
                 pr("closest COMPATIBLE enemy selected", selected_enemy)
                 pr("min_proximity", min_proximity)
                 pr("pac_mine['position']", pac_mine['position'])
                 pr("selected_enemy['position']", selected_enemy['position'])
                 pr("pac_mine['type_id']", pac_mine['type_id'])
                 pr("selected_enemy['type_id']", selected_enemy['type_id'])
-                pr("SPEED since it is FACE TO FACE", selected_enemy['position'])
-                add_command("SPEED", pac_mine['id'])
+                pr("ATTACK since it is FACE TO FACE", selected_enemy['position'])
+                add_command("MOVE", pac_mine['id'], selected_enemy['position'])
                 continue
             else:
                 pr("closest COMPATIBLE enemy selected", selected_enemy)
@@ -721,8 +726,8 @@ def execute_commands(pacs, pac_targets, scene):
                 pr("selected_enemy['position']", selected_enemy['position'])
                 pr("pac_mine['type_id']", pac_mine['type_id'])
                 pr("selected_enemy['type_id']", selected_enemy['type_id'])
-                pr("ATTACK since it is NOT face to face", selected_enemy['position'])
-                add_command("MOVE", pac_mine['id'], selected_enemy['position'])
+                pr("SPEED since it is NOT face to face", selected_enemy['position'])
+                add_command("SPEED", pac_mine['id'])
                 continue
         else:
             pr("No compatible enemy to hunt")

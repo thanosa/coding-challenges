@@ -4,6 +4,8 @@ import math
 import random
 import sys
 
+from statistics import median
+
 # Constants
 SUPER_PELLET_VALUE = 10
 MAX_SPEED_TURNS = 5
@@ -145,6 +147,18 @@ def advice_rps(pac_their_type) -> str:
         return "ROCK"
 
 
+def middle_element(values):
+    """
+    Returns the middle element from a lust.
+    In case the number of values are even, the biggest one is discarted.
+    """
+
+    if len(values) % 2 == 0:
+        values = values[:-1]
+
+    return median(values)
+
+
 def read_scene():
     """
     Reads the scene.
@@ -156,7 +170,8 @@ def read_scene():
     scene = {'width': width, 'height': height, 'rows': [], 
              'floor': set(), 'floor_4': set(), 'floor_3': set(), 'floor_2_corner': set(), 'floor_2_aisle': set(), 'floor_1': set(),
              'un_floor': set(), 'un_floor_4': set(), 'un_floor_3': set(), 'un_floor_2_corner': set(), 'un_floor_2_aisle': set(), 'un_floor_1': set(),
-             'wall': set(), 'loops': set(), 'loop_entries': set()}
+             'wall': set(), 'loops': set(), 'loop_entries': set(), 
+             'escape': {}}
 
     for y in range(height):
         row = input()
@@ -194,6 +209,66 @@ def read_scene():
                 scene['floor_2_corner'].add(floor)
         elif liberties == 1:
             scene['floor_1'].add(floor)
+
+    # Find 4 escape floors.
+    #
+    # Constants.
+    most_left_x = 1
+    most_right_x = scene['width'] - 2
+    most_up_y = 1
+    most_down_y = scene['height'] - 2
+    
+    # Temporary dictionary with the floor that sits on the sides.
+    sides = {}
+
+    # Left most.
+    side = "left"
+    sides[side] = set()
+    for floor in scene['floor']:
+        if floor[0] == most_left_x:
+            sides[side].add(floor)
+    y_values = [v[1] for v in sides[side]]
+    y_median = middle_element(y_values)
+    pr("y_values", y_values)
+    pr("y_median", y_median)
+    scene['escape'][side] = (most_left_x, y_median)
+    
+    # Right most.
+    side = "right"
+    sides[side] = set()
+    for floor in scene['floor']:
+        if floor[0] == most_right_x:
+            sides[side].add(floor)
+    y_values = [v[1] for v in sides[side]]
+    y_median = middle_element(y_values)
+    pr("y_values", y_values)
+    pr("y_median", y_median)
+    scene['escape'][side] = (most_right_x, y_median)
+
+    # Up most.
+    side = "up"
+    sides[side] = set()
+    for floor in scene['floor']:
+        if floor[1] == most_up_y:
+            sides[side].add(floor)
+    x_values = [v[0] for v in sides[side]]
+    x_median = middle_element(x_values)
+    pr("x_values", x_values)
+    pr("x_median", x_median)
+    scene['escape'][side] = (x_median, most_up_y)
+
+    # Down most.
+    side = "down"
+    sides[side] = set()
+    for floor in scene['floor']:
+        if floor[1] == most_down_y:
+            sides[side].add(floor)
+    x_values = [v[0] for v in sides[side]]
+    x_median = middle_element(x_values)
+    pr("x_values", x_values)
+    pr("x_median", x_median)
+    scene['escape'][side] = (x_median, most_down_y)
+
 
     # Initialize unexplored floor.
     scene['un_floor'] = copy.deepcopy(scene['floor'])
@@ -659,6 +734,15 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
     return pac_targets
 
 
+def find_escape_floor(pac_mine, pac_their, scene):
+    """
+    Find an escape floor which will save our pac from being eaten.
+    """
+
+    # TEMP
+    return scene['floor'][10]
+
+
 def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal):
     """
     Merges the targets dictionaries into a single one.
@@ -728,7 +812,21 @@ def execute_commands(pacs, pac_targets, scene):
                         min_proximity = proximity
                         selected_enemy = pac_their
         if selected_enemy is not None:
-            if proximity == 0 or (proximity > 0 and pac_mine['ability_cooldown'] > 0):
+            if (proximity == 0 and pac_their['ability_cooldown'] == 1):
+
+                escape_floor = find_escape_floor(pac_mine, pac_their, scene)
+
+                pr("MOVE AWAY. The proximity is zero by the enemy ability cooldown reached 1")
+                pr("Enemy to move away selected", selected_enemy)
+                pr("min_proximity", min_proximity)
+                pr("pac_mine['position']", pac_mine['position'])
+                pr("selected_enemy['position']", selected_enemy['position'])
+                pr("pac_mine['type_id']", pac_mine['type_id'])
+                pr("selected_enemy['type_id']", selected_enemy['type_id'])
+
+                add_command("MOVE", pac_mine['id'], escape_floor)
+
+            elif (proximity == 0 and pac_their['ability_cooldown'] > 1) or (proximity > 0 and pac_mine['ability_cooldown'] > 0):
                 pr("closest COMPATIBLE enemy selected", selected_enemy)
                 pr("min_proximity", min_proximity)
                 pr("pac_mine['position']", pac_mine['position'])
@@ -796,6 +894,7 @@ def main():
 
     # Read the scene.
     scene = read_scene()
+    pr("scene escape", scene['escape'])
 
     # Initialize the cross turn variables.
     last = {

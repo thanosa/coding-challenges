@@ -24,7 +24,7 @@ FLOOR_3_PERCENTAGE_THRESHOLD = 0.7
 FLOOR_2_PERCENTAGE_THRESHOLD = 0.8
 GAME_MATURITY_FOR_SPEEDS = -0.40
 MAX_PROXIMITY_TO_SWITCH = 7
-MAX_PROXIMITY_TO_HUNT = 3
+MAX_PROXIMITY_TO_HUNT = 2
 MAX_DISTANCE_TO_SPEED = 5
 
 
@@ -826,7 +826,8 @@ def execute_commands(pacs, pac_targets, scene):
                         min_proximity = proximity
                         selected_enemy = pac_their
         if selected_enemy is not None:
-            if (proximity == 0 and pac_their['ability_cooldown'] == 1):
+            lost_rps = play_rps(pac_mine['type_id'], selected_enemy) == -1
+            if (proximity == 0 and pac_their['ability_cooldown'] == 1) or (proximity == 0 and lost_rps):
 
                 escape_floor = find_escape_floor(pac_mine, pac_their, scene)
                 pr("MOVE AWAY. The proximity is 0 but the enemy ability cooldown 1", escape_floor)

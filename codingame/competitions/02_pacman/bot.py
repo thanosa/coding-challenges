@@ -458,7 +458,7 @@ def resolve_stucks(current_pacs, last, scene):
             if pac_now['position'] == pac_last['position'] and pac_now['speed_turns_left'] != MAX_SPEED_TURNS:
                 if len(unexplored) > 0:
                     # Choose the first random unexplored floor that further than threshold.
-                    print("UNSTUCK CASE 1", file=sys.stderr)
+                    pr("UNSTUCK CASE 1")
                     chosen = None
                     for _ in range(MAX_RANDOM_TRIES):
                         random_floor = random.choice(list(unexplored))
@@ -470,11 +470,11 @@ def resolve_stucks(current_pacs, last, scene):
                     
                     # If nothing has been chosen, a random one is chosen.
                     if chosen == None:
-                        print("UNSTUCK CASE 2", file=sys.stderr)
+                        pr("UNSTUCK CASE 2")
                         chosen = random.choice(unexplored)
                 else:
                     # If there is no unexplored ares then select a random floor.
-                    print("UNSTUCK CASE 3", file=sys.stderr)
+                    pr("UNSTUCK CASE 3")
                     chosen = random.choice(scene['floor'])
 
                 pac_to_unstuck[pac_now['id']] = chosen
@@ -739,7 +739,7 @@ def execute_commands(pacs, pac_targets, scene):
                     if proximity < min_proximity:
                         min_proximity = proximity
                         selected_enemy = pac_their
-        if selected_enemy is not None and pac_mine['ability_cooldown'] > 0:
+        if selected_enemy is not None and pac_mine['ability_cooldown'] == 0:
             pr("closest INCOMPATIBLE enemy selected", selected_enemy)
             pr("min_proximity", min_proximity)
             pr("pac_mine['position']", pac_mine['position'])

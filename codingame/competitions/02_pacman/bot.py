@@ -358,18 +358,12 @@ def calc_clusters(targets, pac_count, scene):
         # Initialize the clusters as one-to-one with the targets.
         clusters = [[x] for x in targets]
 
-        pr("targets", targets)
-
         # Clustering the targets one-by-one until they become as much as my pacs.
         for _ in range(len(clusters) - pac_count):
             pair_to_join = min(distances_dict, key=(lambda key: distances_dict[key]))
-            pr("pair to join", pair_to_join)
 
             # Update of the distances matrix
             del distances_dict[pair_to_join]
-
-            # Actual merge of the clustering
-            pr("DEBUG: Clusters before merge", clusters)
 
             # Find the two clusters the pairs belong to.
             clusters_to_join = []
@@ -390,10 +384,7 @@ def calc_clusters(targets, pac_count, scene):
 
             # Add the new cluster to the clusters.
             clusters.append(new_cluster)
-            pr("DEBUG: Clusters after merge ", clusters)
     
-    pr("clusters:", clusters)
-
     return clusters
 
 

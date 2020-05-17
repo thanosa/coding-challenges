@@ -672,6 +672,10 @@ def add_command(command, pac_id, arg=None):
     elif command == "SWITCH":
         pac_their_type = arg
         switch_to_type = advice_rps(pac_their_type)
+
+        pr("my type", pac_id)
+        pr("advice", switch_to_type)
+
         COMMANDS.append(f"SWITCH {pac_id} {switch_to_type} {switch_to_type}")
 
 
@@ -689,85 +693,78 @@ def execute_commands(pacs, pac_targets, scene):
         pr(" ")
         pr("pac", pac_mine)
         
-        if pac_mine['ability_cooldown'] > 0:
-            pr("no ability available so we move to", pac_targets[pac_mine['id']])
-            add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
-            continue
-        else:
-            pr("abilities are availble")
-            if len(pacs['their']) > 0:
-                # Find the closest compatible enemy to hunt (SPEED / MOVE).
-                min_proximity = math.inf
-                selected_enemy = None
-                for pac_their in pacs['their']:
-                    proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
-                    if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
-                        win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
-                        if win_rps:
-                            pr("we WIN in rps")
-                            if proximity < min_proximity:
-                                min_proximity = proximity
-                                selected_enemy = pac_their
-                if selected_enemy is not None:
-                    if proximity != 0 and pac_mine['speed_turns_left'] == 0:
-                        pr("closest COMPATIBLE enemy selected", selected_enemy)
-                        pr("min_proximity", min_proximity)
-                        pr("pac_mine['position']", pac_mine['position'])
-                        pr("selected_enemy['position']", selected_enemy['position'])
-                        pr("pac_mine['type_id']", pac_mine['type_id'])
-                        pr("selected_enemy['type_id']", selected_enemy['type_id'])
-                        pr("SPEED since it is FACE TO FACE", selected_enemy['position'])
-                        add_command("SPEED", pac_mine['id'])
-                        continue
-                    else:
-                        pr("closest COMPATIBLE enemy selected", selected_enemy)
-                        pr("min_proximity", min_proximity)
-                        pr("pac_mine['position']", pac_mine['position'])
-                        pr("selected_enemy['position']", selected_enemy['position'])
-                        pr("pac_mine['type_id']", pac_mine['type_id'])
-                        pr("selected_enemy['type_id']", selected_enemy['type_id'])
-                        pr("ATTACK since it is NOT face to face", selected_enemy['position'])
-                        add_command("MOVE", pac_mine['id'], selected_enemy['position'])
-                        continue
-                else:
-                    pr("No compatible enemy to hunt")
-
-                # Find the closest incompatible enemy to switch against it.
-                min_proximity = math.inf
-                selected_enemy = None
-                for pac_their in pacs['their']:
-                    proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
-                    if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
-                        win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
-                        if not win_rps:
-                            pr("we DONT WIN in rps")
-                            if proximity < min_proximity:
-                                min_proximity = proximity
-                                selected_enemy = pac_their
-                if selected_enemy is not None:
-                    pr("closest INCOMPATIBLE enemy selected", selected_enemy)
-                    pr("min_proximity", min_proximity)
-                    pr("pac_mine['position']", pac_mine['position'])
-                    pr("selected_enemy['position']", selected_enemy['position'])
-                    pr("pac_mine['type_id']", pac_mine['type_id'])
-                    pr("selected_enemy['type_id']", selected_enemy['type_id'])
-                    pr("SWITCH as we are incompatible", selected_enemy['position'])
-                    add_command("SWITCH", pac_mine['id'], pac_their['type_id'])
-                    continue
-                else:
-                    pr("No incompatible enemy to switch")
-
-            pr("No aggressive actions can be taken")
-            if game_maturity < GAME_MATURITY_FOR_SPEEDS:
-                pr("SPEED abuse as maturity is low", game_maturity)
+        # Find the closest compatible enemy to hunt (SPEED / MOVE).
+        min_proximity = math.inf
+        selected_enemy = None
+        for pac_their in pacs['their']:
+            proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
+                win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
+                if win_rps:
+                    pr("we WIN in rps")
+                    if proximity < min_proximity:
+                        min_proximity = proximity
+                        selected_enemy = pac_their
+        if selected_enemy is not None:
+            if proximity != 0 and pac_mine['ability_cooldown'] > 0:
+                pr("closest COMPATIBLE enemy selected", selected_enemy)
+                pr("min_proximity", min_proximity)
+                pr("pac_mine['position']", pac_mine['position'])
+                pr("selected_enemy['position']", selected_enemy['position'])
+                pr("pac_mine['type_id']", pac_mine['type_id'])
+                pr("selected_enemy['type_id']", selected_enemy['type_id'])
+                pr("SPEED since it is FACE TO FACE", selected_enemy['position'])
                 add_command("SPEED", pac_mine['id'])
                 continue
             else:
-                pr("maturity is high so prefer to not speed")
-                pr("game_maturity", game_maturity)
-                pr("MOVE to target", pac_targets[pac_mine['id']])
-                add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
+                pr("closest COMPATIBLE enemy selected", selected_enemy)
+                pr("min_proximity", min_proximity)
+                pr("pac_mine['position']", pac_mine['position'])
+                pr("selected_enemy['position']", selected_enemy['position'])
+                pr("pac_mine['type_id']", pac_mine['type_id'])
+                pr("selected_enemy['type_id']", selected_enemy['type_id'])
+                pr("ATTACK since it is NOT face to face", selected_enemy['position'])
+                add_command("MOVE", pac_mine['id'], selected_enemy['position'])
                 continue
+        else:
+            pr("No compatible enemy to hunt")
+
+        # Find the closest incompatible enemy to switch against it.
+        min_proximity = math.inf
+        selected_enemy = None
+        for pac_their in pacs['their']:
+            proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
+                win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
+                if not win_rps:
+                    pr("we DONT WIN in rps")
+                    if proximity < min_proximity:
+                        min_proximity = proximity
+                        selected_enemy = pac_their
+        if selected_enemy is not None and pac_mine['ability_cooldown'] > 0:
+            pr("closest INCOMPATIBLE enemy selected", selected_enemy)
+            pr("min_proximity", min_proximity)
+            pr("pac_mine['position']", pac_mine['position'])
+            pr("selected_enemy['position']", selected_enemy['position'])
+            pr("pac_mine['type_id']", pac_mine['type_id'])
+            pr("selected_enemy['type_id']", selected_enemy['type_id'])
+            pr("SWITCH as we are incompatible", selected_enemy['position'])
+            add_command("SWITCH", pac_mine['id'], pac_their['type_id'])
+            continue
+        else:
+            pr("No incompatible enemy to switch against")
+
+        pr("No aggressive actions can be taken")
+        if game_maturity < GAME_MATURITY_FOR_SPEEDS:
+            pr("SPEED abuse as maturity is low", game_maturity)
+            add_command("SPEED", pac_mine['id'])
+            continue
+        else:
+            pr("maturity is high so prefer to not speed")
+            pr("game_maturity", game_maturity)
+            pr("MOVE to target", pac_targets[pac_mine['id']])
+            add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
+            continue
 
     # Execute the commands
     print("  |  ".join(COMMANDS))

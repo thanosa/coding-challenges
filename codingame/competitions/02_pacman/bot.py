@@ -229,8 +229,6 @@ def read_scene():
             sides[side].add(floor)
     y_values = [v[1] for v in sides[side]]
     y_median = middle_element(y_values)
-    pr("y_values", y_values)
-    pr("y_median", y_median)
     scene['escape'][side] = (most_left_x, y_median)
     
     # Right most.
@@ -241,8 +239,6 @@ def read_scene():
             sides[side].add(floor)
     y_values = [v[1] for v in sides[side]]
     y_median = middle_element(y_values)
-    pr("y_values", y_values)
-    pr("y_median", y_median)
     scene['escape'][side] = (most_right_x, y_median)
 
     # Up most.
@@ -253,8 +249,6 @@ def read_scene():
             sides[side].add(floor)
     x_values = [v[0] for v in sides[side]]
     x_median = middle_element(x_values)
-    pr("x_values", x_values)
-    pr("x_median", x_median)
     scene['escape'][side] = (x_median, most_up_y)
 
     # Down most.
@@ -265,8 +259,6 @@ def read_scene():
             sides[side].add(floor)
     x_values = [v[0] for v in sides[side]]
     x_median = middle_element(x_values)
-    pr("x_values", x_values)
-    pr("x_median", x_median)
     scene['escape'][side] = (x_median, most_down_y)
 
 
@@ -894,7 +886,6 @@ def main():
 
     # Read the scene.
     scene = read_scene()
-    pr("scene escape", scene['escape'])
 
     # Initialize the cross turn variables.
     last = {

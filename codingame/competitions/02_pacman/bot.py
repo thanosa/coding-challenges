@@ -731,8 +731,30 @@ def find_escape_floor(pac_mine, pac_their, scene):
     Find an escape floor which will save our pac from being eaten.
     """
 
-    # TEMP
-    return scene['floor'][10]
+    # Shortcuts
+    escapes = scene['escape']
+    my_x = pac_mine['position'][0]
+    my_y = pac_mine['position'][1]
+    their_x = pac_their['position'][0]
+    their_y = pac_their['position'][1]
+
+    # Identify the arrangement of the pacs to select the correct escape floor.
+    dx = abs(my_x - their_x)
+    dy = abs(my_y - their_y)
+
+    # The x is prefered because the width is greater than the height.
+    if dx >= dy:
+        # Horizontal or diagonal with equal distance on x and y.
+        if my_x > their_x:
+            return escapes['right']
+        else:
+            return escapes['left']
+    else:
+        # Vertical.
+        if my_y > their_y:
+            return escapes['down']
+        else:
+            return escapes['up']
 
 
 def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal):
@@ -807,16 +829,15 @@ def execute_commands(pacs, pac_targets, scene):
             if (proximity == 0 and pac_their['ability_cooldown'] == 1):
 
                 escape_floor = find_escape_floor(pac_mine, pac_their, scene)
-
-                pr("MOVE AWAY. The proximity is zero by the enemy ability cooldown reached 1")
+                pr("MOVE AWAY. The proximity is 0 but the enemy ability cooldown 1", escape_floor)
                 pr("Enemy to move away selected", selected_enemy)
                 pr("min_proximity", min_proximity)
                 pr("pac_mine['position']", pac_mine['position'])
                 pr("selected_enemy['position']", selected_enemy['position'])
                 pr("pac_mine['type_id']", pac_mine['type_id'])
                 pr("selected_enemy['type_id']", selected_enemy['type_id'])
-
                 add_command("MOVE", pac_mine['id'], escape_floor)
+                continue
 
             elif (proximity == 0 and pac_their['ability_cooldown'] > 1) or (proximity > 0 and pac_mine['ability_cooldown'] > 0):
                 pr("closest COMPATIBLE enemy selected", selected_enemy)

@@ -26,6 +26,7 @@ GAME_MATURITY_FOR_SPEEDS = -0.40
 MAX_PROXIMITY_TO_SWITCH = 7
 MAX_PROXIMITY_TO_HUNT = 2
 MAX_DISTANCE_TO_SPEED = 5
+MIN_PEACE_TO_SPEED = 8
 
 
 def pr(message, variable=None):
@@ -613,28 +614,15 @@ def resolve_stucks(current_pacs, last, scene):
             no_max_speed_turns = pac_now['speed_turns_left'] != MAX_SPEED_TURNS
 
             if same_position and same_type and no_max_speed_turns:
-                if len(unexplored) > 0:
-                    # Choose the first random unexplored floor that further than threshold.
-                    pr("UNSTUCK CASE 1")
-                    chosen = None
-                    for _ in range(MAX_RANDOM_TRIES):
-                        random_floor = random.choice(list(unexplored))
-                        distance = calc_distance(pac_now['position'], random_floor, scene)
-
-                        if distance > MIN_DISTANCE_TO_UNSTUCK:
-                            chosen = random_floor
-                            break
-                    
-                    # If nothing has been chosen, a random one is chosen.
-                    if chosen == None:
-                        pr("UNSTUCK CASE 2")
-                        chosen = random.choice(unexplored)
-                else:
-                    # If there is no unexplored ares then select a random floor.
-                    pr("UNSTUCK CASE 3")
-                    chosen = random.choice(scene['floor'])
-
-                pac_to_unstuck[pac_now['id']] = chosen
+                # Select the most distance escape floor.
+                selected_escape = None
+                max_distance = -math.inf
+                for place, escape in scene['escape'].items():
+                    distance = calc_distance(pac_now['position'], escape, scene)
+                    if distance > max_distance:
+                        max_distance = distance
+                        selected_escape = escape
+                pac_to_unstuck[pac_now['id']] = selected_escape
 
     return pac_to_unstuck
 
@@ -687,8 +675,6 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                 if proximity >= 0:
                     directions[direction][pellet] = proximity
 
-            pr("directions", directions)
-
             # Find the direction that gives the most value per distance (cost).
             max_expected_value = -math.inf
             selected_direction = None
@@ -715,16 +701,10 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                         max_proximity = proximity
                         selected_target = target
 
-                pr("selected direction", selected_direction)
-                pr("selected target", selected_target)
-                pr("max average value", max_expected_value)
-
             # If the stack exists get it, otherwise create it.
             if pac['id'] in last['pellet_stack']:
                 stack = last['pellet_stack'][pac['id']]
-                pr("selecting the existing stack", stack)
             else:
-                pr("create a new stack")
                 stack = []
 
             # The visible pellets from the non selected directions are stored in the stack.
@@ -735,14 +715,11 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
                             stack.remove(target)
                         stack.append(target)
             
-            pr("updated stack", stack)
-
             # Update the stack
             last['pellet_stack'][pac['id']] = stack
 
         # Go to the stacked pellets.
         if selected_target is None:
-            pr("Using the stack")
             if pac['id'] in last['pellet_stack']:
                 stack = last['pellet_stack'][pac['id']]
                 if len(stack) > 0:
@@ -934,13 +911,13 @@ def add_command(command, pac_id, arg=None):
         pac_their_type = arg
         switch_to_type = advice_rps(pac_their_type)
 
-        pr("my type", pac_id)
+        pr("their type", pac_their_type)
         pr("advice", switch_to_type)
 
         COMMANDS.append(f"SWITCH {pac_id} {switch_to_type} {switch_to_type}")
 
 
-def execute_commands(pacs, pac_targets, scene):
+def execute_commands(pacs, pac_targets, last, scene):
     """
     Generate and execute the commands.
     """
@@ -953,6 +930,26 @@ def execute_commands(pacs, pac_targets, scene):
     for pac_mine in pacs['mine']:
         pr(" ")
         pr("pac", pac_mine)
+
+        # Check if there is any visible enemies to count piece turns.
+        peace_turn = True
+        min_proximity = math.inf
+        for pac_their in pacs['their']:
+            proximity = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            if proximity >= 0:
+                peace_turn = False
+                break
+        
+        if peace_turn:
+            if pac_mine['id'] in last['peace_turns']:
+                last['peace_turns'][pac_mine['id']] += 1
+                pr("last['peace_turns'][pac_mine['id']]", last['peace_turns'][pac_mine['id']])
+            else:
+                last['peace_turns'][pac_mine['id']] = 0
+                pr("last['peace_turns'][pac_mine['id']]", last['peace_turns'][pac_mine['id']])
+        else:
+            last['peace_turns'][pac_mine['id']] = 0
+            pr("last['peace_turns'][pac_mine['id']]", last['peace_turns'][pac_mine['id']])
         
         # Find the closest compatible enemy to hunt (SPEED / MOVE).
         min_proximity = math.inf
@@ -968,8 +965,8 @@ def execute_commands(pacs, pac_targets, scene):
                         selected_enemy = pac_their
         if selected_enemy is not None:
             lost_rps = play_rps(pac_mine['type_id'], selected_enemy) == -1
+            # #if (proximity == 0 and pac_their['ability_cooldown'] <= 1) or (proximity == 0 and lost_rps):
             if (proximity == 0 and pac_their['ability_cooldown'] == 1) or (proximity == 0 and lost_rps):
-
                 escape_floor = find_escape_floor(pac_mine, pac_their, scene)
                 pr("MOVE AWAY. The proximity is 0 but the enemy ability cooldown 1", escape_floor)
                 pr("Enemy to move away selected", selected_enemy)
@@ -981,7 +978,9 @@ def execute_commands(pacs, pac_targets, scene):
                 add_command("MOVE", pac_mine['id'], escape_floor)
                 continue
 
+            # # elif (proximity == 0 and pac_their['ability_cooldown'] > 1) or (proximity > 0 and pac_mine['ability_cooldown'] <= pac_their['ability_cooldown']):
             elif (proximity == 0 and pac_their['ability_cooldown'] > 1) or (proximity > 0 and pac_mine['ability_cooldown'] > 0):
+
                 pr("closest COMPATIBLE enemy selected", selected_enemy)
                 pr("min_proximity", min_proximity)
                 pr("pac_mine['position']", pac_mine['position'])
@@ -1030,18 +1029,23 @@ def execute_commands(pacs, pac_targets, scene):
             pr("No incompatible enemy to switch against")
 
         pr("No aggressive actions can be taken")
+
         if game_maturity < GAME_MATURITY_FOR_SPEEDS:
             pr("SPEED abuse as maturity is low", game_maturity)
             add_command("SPEED", pac_mine['id'])
             continue
-        else:
-            pr("maturity is high so prefer not speeding")
-            pr("game_maturity", game_maturity)
-            pr("MOVE to target", pac_targets[pac_mine['id']])
+        
+        if pac_mine['id'] in last['peace_turns']:
+            if last['peace_turns'][pac_mine['id']] > MIN_PEACE_TO_SPEED:
+                if pac_mine['speed_turns_left'] == 0 and pac_mine['ability_cooldown'] == 0:
+                    pr("SPEED as too many turns in peace", last['peace_turns'])
+                    add_command("SPEED", pac_mine['id'])
+                    continue
 
+        if True:
             pr("pac_mine['id']", pac_mine['id'])
             pr("pac targets", pac_targets)
-            pr("pac_targets[pac_mine['id']]", pac_targets[pac_mine['id']])
+            pr("MOVE to target", pac_targets[pac_mine['id']])
             add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
             continue
 
@@ -1060,7 +1064,8 @@ def main():
         'super_pellet_plan': None,
         'normal_pellet_plan': None,
         'pacs_mine': {},
-        'pellet_stack': {}}
+        'pellet_stack': {},
+        'peace_turns': {}}
 
     # Game loop.
     turn = 0
@@ -1107,7 +1112,7 @@ def main():
         pr("pac targets", pac_targets)
         
         # Generate and execute the commands
-        execute_commands(pacs, pac_targets, scene)
+        execute_commands(pacs, pac_targets, last, scene)
         
         # Update the cross turn variables.
         last['super_pellet_count'] = len(super_pellets)

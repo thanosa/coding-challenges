@@ -107,7 +107,7 @@ def calc_pacs_proximity(pac1, pac2, pacs, scene) -> int:
             return floor_in_between
 
 
-def calc_pellets_proximity(pac_mine, normal_pellet, scene) -> int:
+def calc_pellets_proximity(pac_mine_position, normal_pellet, scene) -> int:
     """
     Calculates the proximity between a pac and a pellet.
         -1: Pac is not seeting the pellet
@@ -116,19 +116,19 @@ def calc_pellets_proximity(pac_mine, normal_pellet, scene) -> int:
     """
     obstacles = scene['wall'] 
 
-    horizontal = pac_mine[1] == normal_pellet[1]
-    vertical = pac_mine[0] == normal_pellet[0]
+    horizontal = pac_mine_position[1] == normal_pellet[1]
+    vertical = pac_mine_position[0] == normal_pellet[0]
 
     # The are not in the same row or column.
     if not horizontal and not vertical:
         return -1, ""
     elif horizontal:
-        y = pac_mine[1]
-        min_x = min(pac_mine[0], normal_pellet[0])
-        max_x = max(pac_mine[0], normal_pellet[0])
+        y = pac_mine_position[1]
+        min_x = min(pac_mine_position[0], normal_pellet[0])
+        max_x = max(pac_mine_position[0], normal_pellet[0])
 
         # Find the direction
-        if pac_mine[0] > normal_pellet[0]:
+        if pac_mine_position[0] > normal_pellet[0]:
             direction = "left"
         else:
             direction = "right"
@@ -138,18 +138,25 @@ def calc_pellets_proximity(pac_mine, normal_pellet, scene) -> int:
         if floor_in_between == 0:
             return floor_in_between, direction
         else:
+            # Check if it is on loop entry
+            if pac_mine_position in scene['loop_entries'] and normal_pellet in scene['loop_entries']:
+                if pac_mine_position[0] == 0:
+                    return 0, "left"
+                else:
+                    return 0, "right"
+
             # Check for obstacles.
             for x in range(min_x + 1, max_x):
                 if (x, y) in obstacles:
                     return -1, ""
             return floor_in_between, direction
     elif vertical:
-        x = pac_mine[0]
-        min_y = min(pac_mine[1], normal_pellet[1])
-        max_y = max(pac_mine[1], normal_pellet[1])
+        x = pac_mine_position[0]
+        min_y = min(pac_mine_position[1], normal_pellet[1])
+        max_y = max(pac_mine_position[1], normal_pellet[1])
 
         # Find the direction
-        if pac_mine[1] > normal_pellet[1]:
+        if pac_mine_position[1] > normal_pellet[1]:
             direction = "up"
         else:
             direction = "down"

@@ -664,7 +664,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
     # Assign each pac the furhter available blue that is on the line of sight
     # If there is none then assign the closest one on the scene.
     for pac in pacs_mine:
-        pr("pac: ", pac['id'])
+        pr("pac: ", pac)
         # Initialize the selected target.
         selected_target = None
         
@@ -683,19 +683,20 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
             pr("directions", directions)
 
             # Find the direction that gives the most value per distance (cost).
-            max_average_value = -math.inf
+            max_expected_value = -math.inf
             selected_direction = None
             for direction, targets in directions.items():
                 if len(targets) > 0:
-                    value = len(targets)
-                    cost = 1
+                    max_proximity = -math.inf
                     for target, proximity in targets.items():
-                        cost += proximity + 1
-
-                    average_value = value + value / cost
-
-                    if average_value > max_average_value:
-                        max_average_value = average_value
+                        if proximity > max_proximity:
+                            max_proximity = proximity
+                    # Heuristic calculation of the expected value.
+                    value = len(targets)
+                    density = value / (max_proximity + 1)
+                    expected_value = value * (density**2)
+                    if expected_value > max_expected_value:
+                        max_expected_value = expected_value
                         selected_direction = direction
 
             # Find the most distant one from the selected direction.
@@ -709,7 +710,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
 
                 pr("selected direction", selected_direction)
                 pr("selected target", selected_target)
-                pr("max average value", max_average_value)
+                pr("max average value", max_expected_value)
 
             # If the stack exists get it, otherwise create it.
             if pac['id'] in last['pellet_stack']:

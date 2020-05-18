@@ -55,9 +55,9 @@ def get_neighbors(point, direction=None) -> {}:
         return neighbors[direction]
 
 
-def pacs_proximity(pac1, pac2, pacs, scene) -> int:
+def calc_pacs_proximity(pac1, pac2, pacs, scene) -> int:
     """
-    Checks if two pacs see each other.
+    Calcualtes the proximity between two pacs.
         -1: Pacs are not seeing each other
          0: Pacs are face-to-face
        N>0: Pacs see each other with N floor in between them.
@@ -85,7 +85,7 @@ def pacs_proximity(pac1, pac2, pacs, scene) -> int:
         if floor_in_between == 0:
             return floor_in_between
         else:
-            # Check if any intermediate point is wall or a pac.
+            # Check for obstacles.
             for x in range(min_x + 1, max_x):
                 if (x, y) in obstacles:
                     return -1
@@ -100,11 +100,70 @@ def pacs_proximity(pac1, pac2, pacs, scene) -> int:
         if floor_in_between == 0:
             return floor_in_between
         else:
-            # Check if any intermediate point is wall or a pac.
+            # Check for obstacles.
             for y in range(min_y + 1, max_y):
                 if (x, y) in obstacles:
                     return -1
             return floor_in_between
+
+
+def calc_pellets_proximity(pac_mine, normal_pellet, scene) -> int:
+    """
+    Calculates the proximity between a pac and a pellet.
+        -1: Pac is not seeting the pellet
+         0: Pac is face to face with the pellet
+       N>0: Pac sees the pellet and there are N floor in between them.
+    """
+    obstacles = scene['wall'] 
+
+    horizontal = pac_mine[1] == normal_pellet[1]
+    vertical = pac_mine[0] == normal_pellet[0]
+
+    # The are not in the same row or column.
+    if not horizontal and not vertical:
+        return -1, ""
+    elif horizontal:
+        y = pac_mine[1]
+        min_x = min(pac_mine[0], normal_pellet[0])
+        max_x = max(pac_mine[0], normal_pellet[0])
+
+        # Find the direction
+        if pac_mine[0] > normal_pellet[0]:
+            direction = "left"
+        else:
+            direction = "right"
+
+        # They are face-to-face.
+        floor_in_between = (max_x - min_x) - 1
+        if floor_in_between == 0:
+            return floor_in_between, direction
+        else:
+            # Check for obstacles.
+            for x in range(min_x + 1, max_x):
+                if (x, y) in obstacles:
+                    return -1, ""
+            return floor_in_between, direction
+    elif vertical:
+        x = pac_mine[0]
+        min_y = min(pac_mine[1], normal_pellet[1])
+        max_y = max(pac_mine[1], normal_pellet[1])
+
+        # Find the direction
+        if pac_mine[1] > normal_pellet[1]:
+            direction = "up"
+        else:
+            direction = "down"
+
+        # They are next to each other.
+        floor_in_between = (max_y - min_y) - 1
+        if floor_in_between == 0:
+            return floor_in_between, direction
+        else:
+            # Check for obstacles.
+            for y in range(min_y + 1, max_y):
+                if (x, y) in obstacles:
+                    return -1, ""
+            return floor_in_between, direction
 
 
 def play_rps(pac_mine_type, pac_their_type) -> int:
@@ -609,14 +668,88 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
         # Initialize the selected target.
         selected_target = None
         
+        # Go to the visible pellets.
+        pr("normal pellets", normal_pellets)
+        if len(normal_pellets) > 0:
+            pr("There are visible normal pellets")
+            directions = {'up': {}, 'down': {}, 'left': {}, 'right': {}}
+
+            # Calculate the proximity for all normal pellets.
+            for pellet in normal_pellets:
+                proximity, direction = calc_pellets_proximity(pac['position'], pellet, scene)
+                if proximity > 0:
+                    directions[direction][pellet] = proximity
+
+            pr("directions", directions)
+
+            # Find the direction that gives the most value per distance (cost).
+            max_average_value = -math.inf
+            selected_direction = None
+            for direction, targets in directions.items():
+                if len(targets) > 0:
+                    value = len(targets)
+                    cost = 1
+                    for target, proximity in targets.items():
+                        cost += proximity + 1
+
+                    average_value = value + value / cost
+
+                    if average_value > max_average_value:
+                        max_average_value = average_value
+                        selected_direction = direction
+
+            # Find the most distant one from the selected direction.
+            if selected_direction:
+                selected_target = None
+                max_proximity = -math.inf
+                for target, proximity in directions[selected_direction].items():
+                    if proximity > max_proximity:
+                        max_proximity = proximity
+                        selected_target = target
+
+                pr("selected direction", selected_direction)
+                pr("selected target", selected_target)
+                pr("max average value", max_average_value)
+
+            # If the stack exists get it, otherwise create it.
+            if pac['id'] in last['pellet_stack']:
+                stack = last['pellet_stack'][pac['id']]
+                pr("selecting the existing stack", stack)
+            else:
+                pr("create a new stack")
+                stack = []
+
+            # The visible pellets from the non selected directions are stored in the stack.
+            for direction, targets in directions.items():
+                if direction != selected_direction:
+                    for target in targets:
+                        if target in stack:
+                            stack.remove(target)
+                        stack.append(target)
+            
+            pr("updated stack", stack)
+
+            # Update the stack
+            last['pellet_stack'][pac['id']] = stack
+
+        # Go to the stacked pellets.
+        if selected_target is None:
+            pr("Using the stack")
+            if pac['id'] in last['pellet_stack']:
+                stack = last['pellet_stack'][pac['id']]
+                if len(stack) > 0:
+                    for target in stack:
+                        selected_target = stack.pop()
+
         # Check if the existing plan should be reused.
-        if last['normal_pellet_plan'] is not None:
-            if pac['id'] in last['normal_pellet_plan']:
-                planned_position = last['normal_pellet_plan'][pac['id']]
-                current_position = pac['position']
-                if current_position != planned_position:
-                    selected_target = planned_position
-                    pr("NORMAL - USE LAST: ", selected_target)
+        if selected_target is None:
+            if last['normal_pellet_plan'] is not None:
+                if pac['id'] in last['normal_pellet_plan']:
+                    planned_position = last['normal_pellet_plan'][pac['id']]
+                    current_position = pac['position']
+                    if current_position != planned_position:
+                        selected_target = planned_position
+                        pr("NORMAL - USE LAST: ", selected_target)
         
 
         # Create a new plan
@@ -817,7 +950,7 @@ def execute_commands(pacs, pac_targets, scene):
         min_proximity = math.inf
         selected_enemy = None
         for pac_their in pacs['their']:
-            proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            proximity = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
             if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
                 win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
                 if win_rps:
@@ -867,7 +1000,7 @@ def execute_commands(pacs, pac_targets, scene):
         min_proximity = math.inf
         selected_enemy = None
         for pac_their in pacs['their']:
-            proximity = pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            proximity = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
             if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
                 win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
                 if not win_rps:
@@ -897,6 +1030,10 @@ def execute_commands(pacs, pac_targets, scene):
             pr("maturity is high so prefer not speeding")
             pr("game_maturity", game_maturity)
             pr("MOVE to target", pac_targets[pac_mine['id']])
+
+            pr("pac_mine['id']", pac_mine['id'])
+            pr("pac targets", pac_targets)
+            pr("pac_targets[pac_mine['id']]", pac_targets[pac_mine['id']])
             add_command("MOVE", pac_mine['id'], pac_targets[pac_mine['id']])
             continue
 
@@ -914,7 +1051,8 @@ def main():
         'super_pellet_count': -1, 
         'super_pellet_plan': None,
         'normal_pellet_plan': None,
-        'pacs_mine': {}}
+        'pacs_mine': {},
+        'pellet_stack': {}}
 
     # Game loop.
     turn = 0

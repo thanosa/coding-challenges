@@ -677,7 +677,7 @@ def collect_normal_pellets(pacs_mine, normal_pellets, last, scene):
             # Calculate the proximity for all normal pellets.
             for pellet in normal_pellets:
                 proximity, direction = calc_pellets_proximity(pac['position'], pellet, scene)
-                if proximity > 0:
+                if proximity >= 0:
                     directions[direction][pellet] = proximity
 
             pr("directions", directions)

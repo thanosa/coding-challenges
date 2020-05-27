@@ -27,7 +27,6 @@ MAX_PROXIMITY_TO_SWITCH = 7
 MAX_PROXIMITY_TO_HUNT = 2
 MAX_DISTANCE_TO_SPEED = 5
 MIN_PEACE_TO_SPEED = 8
-MIN_PAC_PROXIMITY = 1
 
 
 def pr(message, variable=None):
@@ -76,57 +75,37 @@ def calc_pacs_proximity(pac1, pac2, pacs, scene) -> int:
 
     # The are not in the same row or column.
     if not horizontal and not vertical:
-        return -1, ""
+        return -1
     elif horizontal:
         y = pac1[1]
         min_x = min(pac1[0], pac2[0])
         max_x = max(pac1[0], pac2[0])
 
-        # Find the direction
-        if pac1[0] > pac2[0]:
-            direction = "left"
-        else:
-            direction = "right"
-
         # They are face-to-face.
         floor_in_between = (max_x - min_x) - 1
         if floor_in_between == 0:
-            return floor_in_between, direction
+            return floor_in_between
         else:
-
-            # Check if it is on loop entry
-            if pac1 in scene['loop_entries'] and pac2 in scene['loop_entries']:
-                if pac1[0] == 0:
-                    return 0, "left"
-                else:
-                    return 0, "right"
-
             # Check for obstacles.
             for x in range(min_x + 1, max_x):
                 if (x, y) in obstacles:
-                    return -1, ""
-            return floor_in_between, direction
+                    return -1
+            return floor_in_between
     elif vertical:
         x = pac1[0]
         min_y = min(pac1[1], pac2[1])
         max_y = max(pac1[1], pac2[1])
 
-        # Find the direction
-        if pac1[1] > pac2[1]:
-            direction = "up"
-        else:
-            direction = "down"
-
         # They are next to each other.
         floor_in_between = (max_y - min_y) - 1
         if floor_in_between == 0:
-            return floor_in_between, direction
+            return floor_in_between
         else:
             # Check for obstacles.
             for y in range(min_y + 1, max_y):
                 if (x, y) in obstacles:
-                    return -1, ""
-            return floor_in_between, direction
+                    return -1
+            return floor_in_between
 
 
 def calc_pellets_proximity(pac_mine_position, normal_pellet, scene) -> int:
@@ -648,31 +627,7 @@ def resolve_stucks(current_pacs, last, scene):
     return pac_to_unstuck
 
 
-def split_pacs(available_pacs, pacs, scene):
-    """
-    Splits the pacs when they come close together.
-    """
-
-    pac_to_split = {}
-
-    for pac1 in available_pacs:
-        for pac2 in available_pacs:
-            if pac1['id'] != pac2['id']:
-                if pac1['id'] not in pac_to_split.keys() and pac2['id'] not in pac_to_split.keys():
-                    proximity, direction = calc_pacs_proximity(pac1['position'], pac2['position'], pacs, scene)
-
-                    if proximity != -1 and proximity <= MIN_PAC_PROXIMITY:
-                        pr("direction", direction)
-                        pac_to_split[pac2['id']] = scene['escape'][direction]
-
-                        pr("SPLITING", pac1)
-                        pr("from    ", pac2)
-                        pr("sending the last to ", scene['escape'][direction])
-    
-    return pac_to_split
-
-
-def find_available_pacs(pacs, pac_to_unstuck=None, pacs_to_split=None, pac_to_super=None, pac_to_normal=None):
+def find_available_pacs(pacs, pac_to_unstuck=None, pac_to_super=None, pac_to_normal=None):
     """
     Finds the available pacs that are not assigned
     """
@@ -681,9 +636,6 @@ def find_available_pacs(pacs, pac_to_unstuck=None, pacs_to_split=None, pac_to_su
 
     if pac_to_unstuck is not None:
         available_pacs = [x for x in available_pacs if x['id'] not in pac_to_unstuck.keys()]
-
-    if pacs_to_split is not None:
-        available_pacs = [x for x in available_pacs if x['id'] not in pacs_to_split.keys()]
     
     if pac_to_super is not None:
         available_pacs = [x for x in available_pacs if x['id'] not in pac_to_super.keys()]
@@ -923,7 +875,7 @@ def find_escape_floor(pac_mine, pac_their, scene):
             return escapes['up']
 
 
-def merge_targets(pac_to_super, pac_to_unstuck, pac_to_split, pac_to_normal):
+def merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal):
     """
     Merges the targets dictionaries into a single one.
     """
@@ -934,9 +886,6 @@ def merge_targets(pac_to_super, pac_to_unstuck, pac_to_split, pac_to_normal):
 
     if pac_to_unstuck is not None:
         pac_targets.update(pac_to_unstuck)
-
-    if pac_to_split is not None:
-        pac_targets.update(pac_to_split)
 
     if pac_to_normal is not None:
         pac_targets.update(pac_to_normal)
@@ -986,7 +935,7 @@ def execute_commands(pacs, pac_targets, last, scene):
         peace_turn = True
         min_proximity = math.inf
         for pac_their in pacs['their']:
-            proximity, direction = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            proximity = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
             if proximity >= 0:
                 peace_turn = False
                 break
@@ -1006,7 +955,7 @@ def execute_commands(pacs, pac_targets, last, scene):
         min_proximity = math.inf
         selected_enemy = None
         for pac_their in pacs['their']:
-            proximity, direction = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            proximity = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
             if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
                 win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
                 if win_rps:
@@ -1058,7 +1007,7 @@ def execute_commands(pacs, pac_targets, last, scene):
         min_proximity = math.inf
         selected_enemy = None
         for pac_their in pacs['their']:
-            proximity, direction = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
+            proximity = calc_pacs_proximity(pac_mine['position'], pac_their['position'], pacs, scene)
             if proximity >= 0 and proximity <= MAX_PROXIMITY_TO_HUNT:
                 win_rps = play_rps(pac_mine['type_id'], pac_their['type_id']) == 1
                 if not win_rps:
@@ -1147,23 +1096,18 @@ def main():
         available_pacs = find_available_pacs(pacs)
         pac_to_unstuck = resolve_stucks(available_pacs, last, scene)
 
-        # Pass 2 - Split friendly pacs
+        # Pass 2 - Collect super pellets
         available_pacs = find_available_pacs(pacs, pac_to_unstuck)
-        pac_to_split = split_pacs(available_pacs, pacs, scene)
-
-        # Pass 3 - Collect super pellets
-        available_pacs = find_available_pacs(pacs, pac_to_unstuck, pac_to_split)
         pac_to_super = collect_super_pellets(available_pacs, super_pellets, last, scene)
 
-        # Pass 4 - Collect normal pellets.
-        available_pacs = find_available_pacs(pacs, pac_to_unstuck, pac_to_split, pac_to_super)
+        # Pass 3 - Collect normal pellets.
+        available_pacs = find_available_pacs(pacs, pac_to_unstuck, pac_to_super)
         pac_to_normal = collect_normal_pellets(available_pacs, normal_pellets, last, scene)
 
         # Merge the pac targets.
-        pac_targets = merge_targets(pac_to_super, pac_to_unstuck, pac_to_split, pac_to_normal)
+        pac_targets = merge_targets(pac_to_super, pac_to_unstuck, pac_to_normal)
         pr("pac to super"  , pac_to_super)
         pr("pac to unstack", pac_to_unstuck)
-        pr("pac to split", pac_to_split)
         pr("pac to normal" , pac_to_normal)
         pr("pac targets", pac_targets)
         

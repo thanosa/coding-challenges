@@ -1,3 +1,8 @@
+'''
+
+https://www.codingame.com/training/medium/escaping-the-cat
+
+'''
 import math
 
 from typing import Tuple

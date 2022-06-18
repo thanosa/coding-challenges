@@ -61,7 +61,7 @@ class Player():
         self.cards: Optional[Cards] = None
 
     def __repr__(self):
-        return f"at {self.loc}  score {self.score}  daily {self.daily}  arch {self.arch}"
+        return f"at {self.loc}  score {self.score}  PERM: daily {self.daily}  arch {self.arch}"
 
 
 class Cards():
@@ -77,8 +77,7 @@ class Cards():
         self.bonus = int(inputs_str[8])
         self.debt = int(inputs_str[9])
 
-    def __repr__(self):
-        card_types = [
+        self.text = [
             f"{self.train} train" if self.train else "",
             f"{self.code} code " if self.code else "",
             f"{self.daily} daily" if self.daily else "",
@@ -90,12 +89,29 @@ class Cards():
             f"{self.bonus} bonus" if self.bonus else "",
             f"{self.debt} debt " if self.debt else "",
         ]
-
-        return f"{output_list(card_types)}"
+        self.numbers = [
+            self.train,
+            self.code,
+            self.daily,
+            self.tasks,
+            self.arch,
+            self.cd,
+            self.cr,
+            self.ref,
+            self.bonus,
+            self.debt,
+        ]    
+    
+    def __repr__(self):
+        return f"{self.numbers}"
 
 
 def print_info(phase, actions, apps, me, foe):
-    app_header = "   [0, 1, 2, 3, 4, 5, 6, 7]"
+    app_header = f"   {[i for i in range(8)]}"
+    cards_header = f"       [0, 1, 2, 3, 4, 5, 6, 7, B, D]"
+
+    def format_cards(values):
+        return values if values else 10 * [0]
 
     debug(f"PHASE: {phase}")
     debug(f"ACTIONS: {output_list(actions)}")
@@ -106,15 +122,16 @@ def print_info(phase, actions, apps, me, foe):
     debug(app_header)
     debug("")
     debug(f"ME: {me}")
-    debug(f"HAND: {me.hand}")
-    debug(f"DRAW: {me.draw}")
-    debug(f"DISC: {me.discard}")
-    debug(f"AUTO: {me.auto}")
+    debug(cards_header)
+    debug(f" HAND: {me.hand}")
+    debug(f" DRAW: {me.draw}")
+    debug(f" DISC: {format_cards(me.discard)}")
+    debug(f" AUTO: {format_cards(me.auto)}")
     debug("")
     debug(f"  FOE: {foe}")
-    debug(f"CARDS: {foe.cards}")
-    debug(f" AUTO: {foe.auto}")
-
+    debug(cards_header)
+    debug(f"CARDS: {format_cards(foe.cards)}")
+    debug(f" AUTO: {format_cards(foe.auto)}")
 
 def calc_deficit(apps, my_hand):
     """

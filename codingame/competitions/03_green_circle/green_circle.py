@@ -10,60 +10,6 @@ def output_list(a_list):
     return '  '.join([str(x) for x in a_list if x])
 
 
-class App():
-    def __init__(self, inputs_str):
-        inputs = inputs_str.split()
-
-        self.object_type = inputs[0]
-        assert self.object_type == "APPLICATION"
-
-        self._id = int(inputs[1])
-
-        self.train = int(inputs[2])  # number of TRAINING skills needed to release this application
-        self.code = int(inputs[3])  # number of CODING skills needed to release this application
-        self.daily = int(inputs[4])  # number of DAILY_ROUTINE skills needed to release this application
-        self.tasks = int(inputs[5])  # number of TASK_PRIORITIZATION skills needed to release this application
-        self.arch = int(inputs[6])  # number of ARCHITECTURE_STUDY skills needed to release this application
-        self.cd = int(inputs[7])  # number of CONTINUOUS_DELIVERY skills needed to release this application
-        self.cr = int(inputs[8])  # number of CODE_REVIEW skills needed to release this application
-        self.ref = int(inputs[9])  # number of REFACTORING skills needed to release this application
-        self.specs = [
-            self.train,
-            self.code,
-            self.daily,
-            self.tasks,
-            self.arch,
-            self.cd,
-            self.cr,
-            self.ref,
-        ]
-
-    def __repr__(self):
-        return f"{str(self._id).rjust(2, ' ')} {self.specs}"
-
-
-class Player():
-    def __init__(self, inputs_str):
-        # player_location: id of the zone in which the player is located
-        # player_permanent_daily_routine_cards: number of DAILY_ROUTINE the player has played. It allows them to take cards from the adjacent zones
-        # player_permanent_architecture_study_cards: number of ARCHITECTURE_STUDY the player has played. It allows them to draw more cards
-        self.loc, self.score, self.daily, self.arch = [int(j) for j in inputs_str.split()]
-
-        # Cards for me
-        self.hand: Optional[Cards] = None
-        self.draw: Optional[Cards] = None
-        self.discard: Optional[Cards] = None
-
-        # Cards for me and foe
-        self.auto: Optional[Cards] = None
-
-        # Cards for foe
-        self.cards: Optional[Cards] = None
-
-    def __repr__(self):
-        return f"at {self.loc}  score {self.score}  PERM: daily {self.daily}  arch {self.arch}"
-
-
 class Cards():
     def __init__(self, inputs_str):
         self.train = int(inputs_str[0])
@@ -74,8 +20,8 @@ class Cards():
         self.cd = int(inputs_str[5])
         self.cr = int(inputs_str[6])
         self.ref = int(inputs_str[7])
-        self.bonus = int(inputs_str[8])
-        self.debt = int(inputs_str[9])
+        self.bonus = int(inputs_str[8]) if len(inputs_str) >= 9 else 0 # Optional
+        self.debt = int(inputs_str[9]) if len(inputs_str) >= 10 else 0 # Optional
 
         self.text = [
             f"{self.train} train" if self.train else "",
@@ -106,6 +52,61 @@ class Cards():
         return f"{self.numbers}"
 
 
+class App():
+    def __init__(self, inputs_str):
+        inputs = inputs_str.split()
+
+        self.object_type = inputs[0]
+        assert self.object_type == "APPLICATION"
+
+        self._id = int(inputs[1])
+
+        self.train = int(inputs[2])  # number of TRAINING skills needed to release this application
+        self.code = int(inputs[3])  # number of CODING skills needed to release this application
+        self.daily = int(inputs[4])  # number of DAILY_ROUTINE skills needed to release this application
+        self.tasks = int(inputs[5])  # number of TASK_PRIORITIZATION skills needed to release this application
+        self.arch = int(inputs[6])  # number of ARCHITECTURE_STUDY skills needed to release this application
+        self.cd = int(inputs[7])  # number of CONTINUOUS_DELIVERY skills needed to release this application
+        self.cr = int(inputs[8])  # number of CODE_REVIEW skills needed to release this application
+        self.ref = int(inputs[9])  # number of REFACTORING skills needed to release this application
+        self.specs = [
+            self.train,
+            self.code,
+            self.daily,
+            self.tasks,
+            self.arch,
+            self.cd,
+            self.cr,
+            self.ref,
+        ]
+        self.deficit: Optional[Cards] = None
+
+    def __repr__(self):
+        return f"{str(self._id).rjust(2, ' ')} {self.specs}"
+
+
+class Player():
+    def __init__(self, inputs_str):
+        # player_location: id of the zone in which the player is located
+        # player_permanent_daily_routine_cards: number of DAILY_ROUTINE the player has played. It allows them to take cards from the adjacent zones
+        # player_permanent_architecture_study_cards: number of ARCHITECTURE_STUDY the player has played. It allows them to draw more cards
+        self.loc, self.score, self.daily, self.arch = [int(j) for j in inputs_str.split()]
+
+        # Cards for me
+        self.hand: Optional[Cards] = None
+        self.draw: Optional[Cards] = None
+        self.discard: Optional[Cards] = None
+
+        # Cards for me and foe
+        self.auto: Optional[Cards] = None
+
+        # Cards for foe
+        self.cards: Optional[Cards] = None
+
+    def __repr__(self):
+        return f"at {self.loc}  score {self.score}  PERM: daily {self.daily}  arch {self.arch}"
+
+
 def print_info(phase, actions, apps, me, foe):
     app_header = f"   {[i for i in range(8)]}"
     cards_header = f"       [0, 1, 2, 3, 4, 5, 6, 7, B, D]"
@@ -133,12 +134,17 @@ def print_info(phase, actions, apps, me, foe):
     debug(f"CARDS: {format_cards(foe.cards)}")
     debug(f" AUTO: {format_cards(foe.auto)}")
 
-def calc_deficit(apps, my_hand):
+
+def calc_deficit(apps, full_hand):
     """
     Calculate the deficit of the cards for each of the application
     """
 
-    pass
+    debug("DEFICITS")
+    hand = full_hand.numbers[:8]
+    for app in apps:
+        app.deficit = Cards([spec - resource for spec, resource in zip(app.specs, hand)])
+        debug(f"{app._id}: {app.deficit}")
 
 
 def play(phase, actions, apps, me, foe):
@@ -150,6 +156,7 @@ def play(phase, actions, apps, me, foe):
 
     # Check if there is immediately releasable software
     
+    calc_deficit(apps, me.hand)
     return "RANDOM"
 
 # game loop

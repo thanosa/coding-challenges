@@ -84,6 +84,10 @@ class App():
     def __repr__(self):
         return f"{str(self._id).rjust(2, ' ')} {self.specs}"
 
+    def calc_deficit(self, hand: Cards):
+        resources = hand.numbers[:8]
+        self.deficit = Cards([spec - resource for spec, resource in zip(self.specs, resources)])
+
 
 class Player():
     def __init__(self, inputs_str):
@@ -135,15 +139,14 @@ def print_info(phase, actions, apps, me, foe):
     debug(f" AUTO: {format_cards(foe.auto)}")
 
 
-def calc_deficit(apps, full_hand):
+def calc_apps_deficit(apps, my_hand):
     """
     Calculate the deficit of the cards for each of the application
     """
 
     debug("DEFICITS")
-    hand = full_hand.numbers[:8]
     for app in apps:
-        app.deficit = Cards([spec - resource for spec, resource in zip(app.specs, hand)])
+        app.calc_deficit(my_hand)
         debug(f"{app._id}: {app.deficit}")
 
 
@@ -154,9 +157,11 @@ def play(phase, actions, apps, me, foe):
     #                   | TASK_PRIORITIZATION <cardTypeToThrow> <cardTypeToTake> | ARCHITECTURE_STUDY 
     #                   | CONTINUOUS_DELIVERY <cardTypeToAutomate> | CODE_REVIEW | REFACTORING
 
+    calc_apps_deficit(apps, me.hand)
+
     # Check if there is immediately releasable software
     
-    calc_deficit(apps, me.hand)
+    
     return "RANDOM"
 
 # game loop

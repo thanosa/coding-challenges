@@ -85,36 +85,42 @@ class Player():
         # player_permanent_architecture_study_cards: number of ARCHITECTURE_STUDY the player has played. It allows them to draw more cards
         self.loc, self.score, self.daily, self.arch = [int(j) for j in inputs_str.split()]
 
-        # Cards for me
+        # Common cards
+        self.auto: Optional[Cards] = None
+
+    def __repr__(self):
+        return f"at {self.loc}  score {self.score}  PERM: daily {self.daily}  arch {self.arch}"
+
+
+class Me(Player):
+    def __init__(self, inputs_str):
+        super().__init__(inputs_str)
+        
+        # Cards
         self.hand: Optional[Cards] = None
         self.draw: Optional[Cards] = None
         self.discard: Optional[Cards] = None
 
-        # Cards for me and foe
-        self.auto: Optional[Cards] = None
-
-        # Cards for foe
-        self.cards: Optional[Cards] = None
-
         # The deficit for every app
         self.deficit: dict = {}
-
-    def __repr__(self):
-        return f"at {self.loc}  score {self.score}  PERM: daily {self.daily}  arch {self.arch}"
 
     def calc_deficit(self, apps) -> None:
         """
         Calculate the deficit of the player's hand based on the available applications
         """
-        if self.hand is None:
-            own = 8 * [0]
-        else:
-            own = self.hand.main
 
         for app in sorted(apps):
-            cards = Cards([spec - resource for spec, resource in zip(app.specs.main, own)])
+            cards = Cards([spec - resource for spec, resource in zip(app.specs.main, self.hand.main)])
             self.deficit[app._id] = cards
             debug(f"{app._id: >2} {output_list(cards.main)}")
+
+
+class Foe(Player):
+    def __init__(self, inputs_str):
+        super().__init__(inputs_str)
+
+        # Cards
+        self.cards: Optional[Cards] = None
 
 
 def print_info(phase, actions, apps, me, foe):
@@ -158,8 +164,8 @@ def calc_deficits(me, foe, apps):
     debug("MY DEFICITS")
     me.calc_deficit(apps)
     debug("")
-    debug("FOE DEFICITS")
-    foe.calc_deficit(apps)
+    # debug("FOE DEFICITS")
+    # foe.calc_deficit(apps)
 
 def move(me, foe, apps):
     
@@ -208,8 +214,8 @@ def read_inputs():
     apps = [App(input().split()) for _ in range(int(input()))]
 
     # PLAYERS
-    me = Player(input())
-    foe = Player(input())
+    me = Me(input())
+    foe = Foe(input())
 
     # CARDS
     for i in range(int(input())):

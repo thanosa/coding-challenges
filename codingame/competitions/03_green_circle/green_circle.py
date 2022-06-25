@@ -100,6 +100,19 @@ class Player():
     def __repr__(self):
         return f"at {self.loc}  score {self.score}  PERM: daily {self.daily}  arch {self.arch}"
 
+    def calc_deficit(self, apps) -> None:
+        """
+        Calculate the deficit of the player's hand based on the available applications
+        """
+        if self.hand is None:
+            debug("Unable to calculate deficit on an emtpy hand")
+            return
+
+        debug("DEFICITS")
+        for app in apps:
+            app.deficit = Cards([spec - resource for spec, resource in zip(app.specs.main, self.hand.main)])
+            debug(f"{app._id}: {app.deficit}")
+
 
 def print_info(phase, actions, apps, me, foe):
     app_header = f"   [0, 1, 2, 3, 4, 5, 6, 7]"
@@ -134,18 +147,6 @@ def print_info(phase, actions, apps, me, foe):
     debug(f"CARDS: {format_cards(foe.cards)}")
     debug(f" AUTO: {format_cards(foe.auto)}")
 
-def calc_deficit(apps, full_hand):
-    """
-    Calculate the deficit of the cards for each of the application
-    """
-
-    debug("DEFICITS")
-    hand = full_hand.main
-    for app in apps:
-        app.deficit = Cards([spec - resource for spec, resource in zip(app.specs.main, hand)])
-        
-        debug(f"{app._id}: {app.deficit}")
-
 
 def play(phase, actions, apps, me, foe):
     # In the first league: RANDOM | MOVE <zoneId> | RELEASE <applicationId> | WAIT
@@ -156,7 +157,8 @@ def play(phase, actions, apps, me, foe):
 
     # Check if there is immediately releasable software
     
-    calc_deficit(apps, me.hand)
+    me.calc_deficit(apps)
+    foe.calc_deficit(apps)
     return "RANDOM"
 
 # game loop

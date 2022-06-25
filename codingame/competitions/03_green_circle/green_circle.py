@@ -15,6 +15,12 @@ def output_list(a_list):
     elif isinstance(a_list[0], int):
         return ' '.join([f"{str(x): >2}" for x in a_list])
 
+class CardType():
+    def __init__(self, quantity, unit):
+        self.quantity = quantity
+        self.unit = unit
+        self.value = quantity * unit
+
 
 class Cards():
     def __init__(self, inputs_list: list):
@@ -22,12 +28,19 @@ class Cards():
         inputs = list(map(int, inputs_list))
 
         # Main inputs
-        self.train, self.code, self.daily, self.tasks, self.arch, self.cd, self.cr, self.ref = inputs[:8]
+        self.train = CardType(inputs[0], 2)
+        self.code = CardType(inputs[1], 2)
+        self.daily = CardType(inputs[2], 2)
+        self.tasks = CardType(inputs[3], 2)
+        self.arch = CardType(inputs[4], 2)
+        self.cd = CardType(inputs[5], 2)
+        self.cr = CardType(inputs[6], 2)
+        self.ref = CardType(inputs[7], 2)
 
         # Optional inputs
         inludes_optionals = len(inputs) == 10
-        self.bonus = inputs[8] if inludes_optionals else None
-        self.debt = inputs[9] if inludes_optionals else None
+        self.bonus = CardType(inputs[8], 2) if inludes_optionals else None
+        self.debt = CardType(inputs[9], 2) if inludes_optionals else None
 
         self.main = [
             self.train,
@@ -54,10 +67,10 @@ class Cards():
         ]
     
     def __repr__(self):
-        return f"{self.full}"
+        return f"{[x.value for x in self.full]}"
 
     def get_main_sum(self):
-        return sum(self.main)
+        return sum([x.value for x in self.main])
 
 class App():
     def __init__(self, inputs: list):
@@ -69,7 +82,7 @@ class App():
         self.difficulty = self.specs.get_main_sum()
 
     def __repr__(self):
-        return f"{self._id: >2} {output_list(self.specs.main)}"
+        return f"{self._id: >2} {output_list([x.value for x in self.specs.main])}"
 
     def __eq__(self, other):
         return self._id == other._id
@@ -110,9 +123,11 @@ class Me(Player):
         """
 
         for app in sorted(apps):
-            cards = Cards([spec - resource for spec, resource in zip(app.specs.main, self.hand.main)])
-            self.deficit[app._id] = cards
-            debug(f"{app._id: >2} {output_list(cards.main)}")
+            specs = [x.value for x in app.specs.main]
+            hand = [x.value for x in self.hand.main]
+            deficit = [spec - resource for spec, resource in zip(specs, hand)]
+            self.deficit[app._id] = Cards(deficit)
+            debug(f"{app._id: >2} {output_list(deficit)}")
 
 
 class Foe(Player):

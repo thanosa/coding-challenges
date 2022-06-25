@@ -3,7 +3,6 @@ from typing import Optional
 
 
 app_header = f"0  1  2  3  4  5  6  7"
-
 cards_header = f"[0, 1, 2, 3, 4, 5, 6, 7, B, D]"
 
 def debug(msg):
@@ -30,19 +29,6 @@ class Cards():
         inludes_optionals = len(inputs) == 10
         self.bonus = inputs[8] if inludes_optionals else None
         self.debt = inputs[9] if inludes_optionals else None
-
-        self.text = [
-            f"{self.train} train" if self.train else "",
-            f"{self.code} code " if self.code else "",
-            f"{self.daily} daily" if self.daily else "",
-            f"{self.tasks} tasks" if self.tasks else "",
-            f"{self.arch} arch " if self.arch else "",
-            f"{self.cd} cd   " if self.cd else "",
-            f"{self.cr} cr   " if self.cr else "",
-            f"{self.ref} ref  " if self.ref else "",
-            f"{self.bonus} bonus" if self.bonus else "",
-            f"{self.debt} debt " if self.debt else "",
-        ]
 
         self.main = [
             self.train,
@@ -166,6 +152,20 @@ def print_info(phase, actions, apps, me, foe):
 
     debug("")
 
+def calc_deficits(me, foe, apps):
+    debug("MY DEFICITS")
+    me.calc_deficit(apps)
+    debug("")
+    debug("FOE DEFICITS")
+    foe.calc_deficit(apps)
+
+def move(me, foe, apps):
+    pass
+
+def release(me, foe, apps):
+    
+    # Check if there is immediately releasable software
+    pass
 
 def play(phase, actions, apps, me, foe):
     # In the first league: RANDOM | MOVE <zoneId> | RELEASE <applicationId> | WAIT
@@ -174,18 +174,18 @@ def play(phase, actions, apps, me, foe):
     #                   | TASK_PRIORITIZATION <cardTypeToThrow> <cardTypeToTake> | ARCHITECTURE_STUDY 
     #                   | CONTINUOUS_DELIVERY <cardTypeToAutomate> | CODE_REVIEW | REFACTORING
 
-    # Check if there is immediately releasable software
-    
-    debug("MY DEFICITS")
-    me.calc_deficit(apps)
-    debug("")
-    debug("FOE DEFICITS")
-    foe.calc_deficit(apps)
-    
-    return "RANDOM"
+    # This are the calcs needed for all phases
+    calc_deficits(me, foe, apps)
 
-# game loop
-while True:
+    out = None
+    if phase == "MOVE":
+        out = move(me, foe, apps)
+    elif phase == "RELAESE":
+        out = release(me, foe, apps)
+    
+    print(out or "RANDOM")
+
+def read_inputs():
     # PHASE
     phase = input()  # can be MOVE, GIVE_CARD, THROW_CARD, PLAY_CARD or RELEASE
     
@@ -221,9 +221,13 @@ while True:
     # ACTIONS
     actions = [input() for _ in range(int(input()))]
 
-    # Debug
+    return  phase, actions, apps, me, foe
+
+# game loop
+while True:
+
+    phase, actions, apps, me, foe = read_inputs()
+
     print_info(phase, actions, apps, me, foe)
 
-    # Action
-    action = play(phase, actions, apps, me, foe)
-    print(action)
+    play(phase, actions, apps, me, foe)

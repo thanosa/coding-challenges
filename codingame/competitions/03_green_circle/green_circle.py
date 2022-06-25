@@ -22,6 +22,35 @@ class CardType():
         self.value = quantity * unit
 
 
+class Specs():
+    def __init__(self, inputs_list: list):
+        # Convert to int
+        inputs = list(map(int, inputs_list))
+
+        self.train = inputs[0]
+        self.code = inputs[1]
+        self.daily = inputs[2]
+        self.tasks = inputs[3]
+        self.arch = inputs[4]
+        self.cd = inputs[5]
+        self.cr = inputs[6]
+        self.ref = inputs[7]
+
+        self.all = [
+            self.train,
+            self.code,
+            self.daily,
+            self.tasks,
+            self.arch,
+            self.cd,
+            self.cr,
+            self.ref,
+        ]
+
+    def get_sum(self):
+        return sum(self.all)
+
+
 class Cards():
     def __init__(self, inputs_list: list):
         # Convert to int
@@ -69,8 +98,6 @@ class Cards():
     def __repr__(self):
         return f"{[x.value for x in self.full]}"
 
-    def get_main_sum(self):
-        return sum([x.value for x in self.main])
 
 class App():
     def __init__(self, inputs: list):
@@ -78,11 +105,11 @@ class App():
         assert self.object_type == "APPLICATION"
         
         self._id = inputs[1]
-        self.specs: Cards = Cards(inputs[2:])
-        self.difficulty = self.specs.get_main_sum()
+        self.specs: Specs = Specs(inputs[2:])
+        self.difficulty = self.specs.get_sum()
 
     def __repr__(self):
-        return f"{self._id: >2} {output_list([x.quantity for x in self.specs.main])}"
+        return f"{self._id: >2} {output_list(self.specs.all)}"
 
     def __eq__(self, other):
         return self._id == other._id
@@ -123,10 +150,10 @@ class Me(Player):
         """
 
         for app in sorted(apps):
-            specs = [x.quantity for x in app.specs.main]
+            specs = app.specs.all
             hand = [x.quantity for x in self.hand.main]
             deficit = [spec - resource for spec, resource in zip(specs, hand)]
-            self.deficit[app._id] = Cards(deficit)
+            self.deficit[app._id] = Specs(deficit)
 
             debug(f"{app._id: >2}: {output_list(deficit)}")
 
@@ -188,7 +215,7 @@ def move(me, foe, apps):
     # Get a card that is needed for immediate release 
     # if there are more than one immediate release target the one with the max needs
     for app_id, deficit in me.deficit.items():
-        debug(f"{app_id}: {[x.quantity for x in deficit.main]}")
+        debug(f"{app_id}: {deficit.all}")
 
     # Get a rare card that our opponents needs the most
 

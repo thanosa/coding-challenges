@@ -57,6 +57,8 @@ class Cards():
     def __repr__(self):
         return f"{self.full}"
 
+    def get_main_sum(self):
+        return sum(self.main)
 
 class App():
     def __init__(self, inputs: list):
@@ -65,6 +67,7 @@ class App():
         
         self._id = inputs[1]
         self.specs: Cards = Cards(inputs[2:])
+        self.difficulty = self.specs.get_main_sum()
 
     def __repr__(self):
         return f"{self._id: >2} {output_list(self.specs.main)}"
@@ -112,7 +115,7 @@ class Player():
         for app in sorted(apps):
             cards = Cards([spec - resource for spec, resource in zip(app.specs.main, own)])
             self.deficit[app._id] = cards
-            debug(f"{app._id: <2} {output_list(cards.main)}")
+            debug(f"{app._id: >2} {output_list(cards.main)}")
 
 
 def print_info(phase, actions, apps, me, foe):
@@ -121,7 +124,7 @@ def print_info(phase, actions, apps, me, foe):
         return values if values else 10 * [0]
 
     app_title = f"    {app_header}"
-    cards_title = f"      {cards_header}"
+    cards_title = f"       {cards_header}"
 
     debug(f"PHASE: {phase}")
     debug(f"ACTIONS: {output_list(actions)}")
@@ -160,6 +163,19 @@ def calc_deficits(me, foe, apps):
     foe.calc_deficit(apps)
 
 def move(me, foe, apps):
+    
+    # Get a card that is needed for immediate release 
+    # if there are more than one immediate release target the one with the max needs
+
+    # Get a rare card that our opponents needs the most
+
+    # Get a rare card that we need the most
+
+    # Get a card that fullfils the need for the maximum number of apps
+
+    # Get a card the is needed for the most of the apps
+
+    # Get a bonus card
     pass
 
 def release(me, foe, apps):

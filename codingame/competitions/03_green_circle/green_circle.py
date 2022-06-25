@@ -13,7 +13,6 @@ def output_list(a_list):
     if isinstance(a_list[0], str):
         return '  '.join([x for x in a_list if x])
     elif isinstance(a_list[0], int):
-        max_len = max([len(str(x)) for x in a_list])
         return ' '.join([f"{str(x): >2}" for x in a_list])
 
 

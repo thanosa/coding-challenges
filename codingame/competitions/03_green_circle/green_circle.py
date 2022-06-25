@@ -39,8 +39,8 @@ class Cards():
 
         # Optional inputs
         inludes_optionals = len(inputs) == 10
-        self.bonus = CardType(inputs[8], 2) if inludes_optionals else None
-        self.debt = CardType(inputs[9], 2) if inludes_optionals else None
+        self.bonus = CardType(inputs[8], 2) if inludes_optionals else CardType(0, 1)
+        self.debt = CardType(inputs[9], 2) if inludes_optionals else CardType(0, -1)
 
         self.main = [
             self.train,
@@ -127,7 +127,7 @@ class Me(Player):
             hand = [x.value for x in self.hand.main]
             deficit = [spec - resource for spec, resource in zip(specs, hand)]
             self.deficit[app._id] = Cards(deficit)
-            debug(f"{app._id: >2} {output_list(deficit)}")
+            debug(f"{app._id: >2}: {output_list(deficit)}")
 
 
 class Foe(Player):
@@ -186,6 +186,9 @@ def move(me, foe, apps):
     
     # Get a card that is needed for immediate release 
     # if there are more than one immediate release target the one with the max needs
+    for app_id, deficit in me.deficit.items():
+        debug(f"TYPE {type(deficit)}")
+        debug(f"{app_id}: {deficit}")
 
     # Get a rare card that our opponents needs the most
 

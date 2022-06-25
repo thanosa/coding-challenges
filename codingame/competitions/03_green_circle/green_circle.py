@@ -82,7 +82,7 @@ class App():
         self.difficulty = self.specs.get_main_sum()
 
     def __repr__(self):
-        return f"{self._id: >2} {output_list([x.value for x in self.specs.main])}"
+        return f"{self._id: >2} {output_list([x.quantity for x in self.specs.main])}"
 
     def __eq__(self, other):
         return self._id == other._id
@@ -123,10 +123,11 @@ class Me(Player):
         """
 
         for app in sorted(apps):
-            specs = [x.value for x in app.specs.main]
-            hand = [x.value for x in self.hand.main]
+            specs = [x.quantity for x in app.specs.main]
+            hand = [x.quantity for x in self.hand.main]
             deficit = [spec - resource for spec, resource in zip(specs, hand)]
             self.deficit[app._id] = Cards(deficit)
+
             debug(f"{app._id: >2}: {output_list(deficit)}")
 
 
@@ -187,8 +188,7 @@ def move(me, foe, apps):
     # Get a card that is needed for immediate release 
     # if there are more than one immediate release target the one with the max needs
     for app_id, deficit in me.deficit.items():
-        debug(f"TYPE {type(deficit)}")
-        debug(f"{app_id}: {deficit}")
+        debug(f"{app_id}: {[x.quantity for x in deficit.main]}")
 
     # Get a rare card that our opponents needs the most
 
@@ -219,7 +219,7 @@ def play(phase, actions, apps, me, foe):
     out = None
     if phase == "MOVE":
         out = move(me, foe, apps)
-    elif phase == "RELAESE":
+    elif phase == "RELEASE":
         out = release(me, foe, apps)
     
     print(out or "RANDOM")

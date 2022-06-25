@@ -11,17 +11,17 @@ def output_list(a_list):
 
 
 class Cards():
-    def __init__(self, inputs_str):
-        self.train = int(inputs_str[0])
-        self.code = int(inputs_str[1])
-        self.daily = int(inputs_str[2])
-        self.tasks = int(inputs_str[3])
-        self.arch = int(inputs_str[4])
-        self.cd = int(inputs_str[5])
-        self.cr = int(inputs_str[6])
-        self.ref = int(inputs_str[7])
-        self.bonus = int(inputs_str[8]) if len(inputs_str) >= 9 else 0 # Optional
-        self.debt = int(inputs_str[9]) if len(inputs_str) >= 10 else 0 # Optional
+    def __init__(self, inputs: list):
+        # Convert to int
+        int_inputs = list(map(int, inputs))
+
+        # Main inputs
+        self.train, self.code, self.daily, self.tasks, self.arch, self.cd, self.cr, self.ref = int_inputs[:8]
+
+        # Optional inputs
+        inludes_optionals = len(inputs) == 10
+        self.bonus = inputs[8] if inludes_optionals else None
+        self.debt = inputs[9] if inludes_optionals else None
 
         self.text = [
             f"{self.train} train" if self.train else "",
@@ -35,6 +35,7 @@ class Cards():
             f"{self.bonus} bonus" if self.bonus else "",
             f"{self.debt} debt " if self.debt else "",
         ]
+
         self.main = [
             self.train,
             self.code,
@@ -44,12 +45,20 @@ class Cards():
             self.cd,
             self.cr,
             self.ref,
-
         ]
-        self.full = self.main.extend([
+
+        self.full = [
+            self.train,
+            self.code,
+            self.daily,
+            self.tasks,
+            self.arch,
+            self.cd,
+            self.cr,
+            self.ref,
             self.bonus,
             self.debt,
-        ])
+        ]
     
     def __repr__(self):
         return f"{self.full}"
@@ -63,25 +72,7 @@ class App():
         assert self.object_type == "APPLICATION"
 
         self._id = int(inputs[1])
-
-        self.train = int(inputs[2])  # number of TRAINING skills needed to release this application
-        self.code = int(inputs[3])  # number of CODING skills needed to release this application
-        self.daily = int(inputs[4])  # number of DAILY_ROUTINE skills needed to release this application
-        self.tasks = int(inputs[5])  # number of TASK_PRIORITIZATION skills needed to release this application
-        self.arch = int(inputs[6])  # number of ARCHITECTURE_STUDY skills needed to release this application
-        self.cd = int(inputs[7])  # number of CONTINUOUS_DELIVERY skills needed to release this application
-        self.cr = int(inputs[8])  # number of CODE_REVIEW skills needed to release this application
-        self.ref = int(inputs[9])  # number of REFACTORING skills needed to release this application
-        self.specs = [
-            self.train,
-            self.code,
-            self.daily,
-            self.tasks,
-            self.arch,
-            self.cd,
-            self.cr,
-            self.ref,
-        ]
+        self.specs: Cards = Cards(inputs[1:])
         self.deficit: Optional[Cards] = None
 
     def __repr__(self):
@@ -119,19 +110,25 @@ def print_info(phase, actions, apps, me, foe):
 
     debug(f"PHASE: {phase}")
     debug(f"ACTIONS: {output_list(actions)}")
+
     debug("")
+
     debug(app_header)
     for app in sorted(apps, key=lambda x: x._id):
         debug(f"{app}")
     debug(app_header)
+
     debug("")
-    debug(f"ME: {me}")
+
+    debug(f"   ME: {me}")
     debug(cards_header)
     debug(f" HAND: {me.hand}")
     debug(f" DRAW: {me.draw}")
     debug(f" DISC: {format_cards(me.discard)}")
     debug(f" AUTO: {format_cards(me.auto)}")
+
     debug("")
+
     debug(f"  FOE: {foe}")
     debug(cards_header)
     debug(f"CARDS: {format_cards(foe.cards)}")
@@ -145,7 +142,7 @@ def calc_deficit(apps, full_hand):
     debug("DEFICITS")
     hand = full_hand.main
     for app in apps:
-        app.deficit = Cards([spec - resource for spec, resource in zip(app.specs, hand)])
+        app.deficit = Cards([spec - resource for spec, resource in zip(app.specs.main, hand)])
         
         debug(f"{app._id}: {app.deficit}")
 

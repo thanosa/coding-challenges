@@ -35,7 +35,7 @@ class Cards():
             f"{self.bonus} bonus" if self.bonus else "",
             f"{self.debt} debt " if self.debt else "",
         ]
-        self.numbers = [
+        self.main = [
             self.train,
             self.code,
             self.daily,
@@ -44,12 +44,15 @@ class Cards():
             self.cd,
             self.cr,
             self.ref,
+
+        ]
+        self.full = self.main.extend([
             self.bonus,
             self.debt,
-        ]    
+        ])
     
     def __repr__(self):
-        return f"{self.numbers}"
+        return f"{self.full}"
 
 
 class App():
@@ -84,10 +87,6 @@ class App():
     def __repr__(self):
         return f"{str(self._id).rjust(2, ' ')} {self.specs}"
 
-    def calc_deficit(self, hand: Cards):
-        resources = hand.numbers[:8]
-        self.deficit = Cards([spec - resource for spec, resource in zip(self.specs, resources)])
-
 
 class Player():
     def __init__(self, inputs_str):
@@ -112,7 +111,7 @@ class Player():
 
 
 def print_info(phase, actions, apps, me, foe):
-    app_header = f"   {[i for i in range(8)]}"
+    app_header = f"   [0, 1, 2, 3, 4, 5, 6, 7]"
     cards_header = f"       [0, 1, 2, 3, 4, 5, 6, 7, B, D]"
 
     def format_cards(values):
@@ -122,7 +121,7 @@ def print_info(phase, actions, apps, me, foe):
     debug(f"ACTIONS: {output_list(actions)}")
     debug("")
     debug(app_header)
-    for app in apps:
+    for app in sorted(apps, key=lambda x: x._id):
         debug(f"{app}")
     debug(app_header)
     debug("")
@@ -138,15 +137,16 @@ def print_info(phase, actions, apps, me, foe):
     debug(f"CARDS: {format_cards(foe.cards)}")
     debug(f" AUTO: {format_cards(foe.auto)}")
 
-
-def calc_apps_deficit(apps, my_hand):
+def calc_deficit(apps, full_hand):
     """
     Calculate the deficit of the cards for each of the application
     """
 
     debug("DEFICITS")
+    hand = full_hand.main
     for app in apps:
-        app.calc_deficit(my_hand)
+        app.deficit = Cards([spec - resource for spec, resource in zip(app.specs, hand)])
+        
         debug(f"{app._id}: {app.deficit}")
 
 
@@ -157,11 +157,9 @@ def play(phase, actions, apps, me, foe):
     #                   | TASK_PRIORITIZATION <cardTypeToThrow> <cardTypeToTake> | ARCHITECTURE_STUDY 
     #                   | CONTINUOUS_DELIVERY <cardTypeToAutomate> | CODE_REVIEW | REFACTORING
 
-    calc_apps_deficit(apps, me.hand)
-
     # Check if there is immediately releasable software
     
-    
+    calc_deficit(apps, me.hand)
     return "RANDOM"
 
 # game loop
@@ -205,5 +203,5 @@ while True:
     print_info(phase, actions, apps, me, foe)
 
     # Action
-    move = play(phase, actions, apps, me, foe)
-    print(move)
+    action = play(phase, actions, apps, me, foe)
+    print(action)

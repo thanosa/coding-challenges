@@ -2,21 +2,29 @@ import sys
 from typing import Optional
 
 
+app_header = f"0  1  2  3  4  5  6  7"
+
+cards_header = f"[0, 1, 2, 3, 4, 5, 6, 7, B, D]"
+
 def debug(msg):
     print(msg, file=sys.stderr, flush=True) 
 
 
 def output_list(a_list):
-    return '  '.join([str(x) for x in a_list if x])
+    if isinstance(a_list[0], str):
+        return '  '.join([x for x in a_list if x])
+    elif isinstance(a_list[0], int):
+        max_len = max([len(str(x)) for x in a_list])
+        return ' '.join([f"{str(x): >2}" for x in a_list])
 
 
 class Cards():
-    def __init__(self, inputs: list):
+    def __init__(self, inputs_list: list):
         # Convert to int
-        int_inputs = list(map(int, inputs))
+        inputs = list(map(int, inputs_list))
 
         # Main inputs
-        self.train, self.code, self.daily, self.tasks, self.arch, self.cd, self.cr, self.ref = int_inputs[:8]
+        self.train, self.code, self.daily, self.tasks, self.arch, self.cd, self.cr, self.ref = inputs[:8]
 
         # Optional inputs
         inludes_optionals = len(inputs) == 10
@@ -65,18 +73,21 @@ class Cards():
 
 
 class App():
-    def __init__(self, inputs_str):
-        inputs = inputs_str.split()
-
+    def __init__(self, inputs: list):
         self.object_type = inputs[0]
         assert self.object_type == "APPLICATION"
-
-        self._id = int(inputs[1])
-        self.specs: Cards = Cards(inputs[1:])
-        self.deficit: Optional[Cards] = None
+        
+        self._id = inputs[1]
+        self.specs: Cards = Cards(inputs[2:])
 
     def __repr__(self):
-        return f"{str(self._id).rjust(2, ' ')} {self.specs}"
+        return f"{self._id: >2} {output_list(self.specs.main)}"
+
+    def __eq__(self, other):
+        return self._id == other._id
+
+    def __lt__(self, other):
+        return int(self._id) < int(other._id)
 
 
 class Player():
@@ -97,6 +108,9 @@ class Player():
         # Cards for foe
         self.cards: Optional[Cards] = None
 
+        # The deficit for every app
+        self.deficit: dict = {}
+
     def __repr__(self):
         return f"at {self.loc}  score {self.score}  PERM: daily {self.daily}  arch {self.arch}"
 
@@ -105,36 +119,39 @@ class Player():
         Calculate the deficit of the player's hand based on the available applications
         """
         if self.hand is None:
-            debug("Unable to calculate deficit on an emtpy hand")
-            return
+            own = 8 * [0]
+        else:
+            own = self.hand.main
 
-        debug("DEFICITS")
-        for app in apps:
-            app.deficit = Cards([spec - resource for spec, resource in zip(app.specs.main, self.hand.main)])
-            debug(f"{app._id}: {app.deficit}")
+        for app in sorted(apps):
+            cards = Cards([spec - resource for spec, resource in zip(app.specs.main, own)])
+            self.deficit[app._id] = cards
+            debug(f"{app._id: <2} {output_list(cards.main)}")
 
 
 def print_info(phase, actions, apps, me, foe):
-    app_header = f"   [0, 1, 2, 3, 4, 5, 6, 7]"
-    cards_header = f"       [0, 1, 2, 3, 4, 5, 6, 7, B, D]"
-
+    
     def format_cards(values):
         return values if values else 10 * [0]
+
+    app_title = f"    {app_header}"
+    cards_title = f"      {cards_header}"
 
     debug(f"PHASE: {phase}")
     debug(f"ACTIONS: {output_list(actions)}")
 
     debug("")
-
-    debug(app_header)
-    for app in sorted(apps, key=lambda x: x._id):
+    
+    debug("APPS")
+    debug(app_title)
+    for app in sorted(apps):
         debug(f"{app}")
-    debug(app_header)
+    debug(app_title)
 
     debug("")
 
     debug(f"   ME: {me}")
-    debug(cards_header)
+    debug(cards_title)
     debug(f" HAND: {me.hand}")
     debug(f" DRAW: {me.draw}")
     debug(f" DISC: {format_cards(me.discard)}")
@@ -143,9 +160,11 @@ def print_info(phase, actions, apps, me, foe):
     debug("")
 
     debug(f"  FOE: {foe}")
-    debug(cards_header)
+    debug(cards_title)
     debug(f"CARDS: {format_cards(foe.cards)}")
     debug(f" AUTO: {format_cards(foe.auto)}")
+
+    debug("")
 
 
 def play(phase, actions, apps, me, foe):
@@ -157,8 +176,12 @@ def play(phase, actions, apps, me, foe):
 
     # Check if there is immediately releasable software
     
+    debug("MY DEFICITS")
     me.calc_deficit(apps)
+    debug("")
+    debug("FOE DEFICITS")
     foe.calc_deficit(apps)
+    
     return "RANDOM"
 
 # game loop
@@ -167,7 +190,7 @@ while True:
     phase = input()  # can be MOVE, GIVE_CARD, THROW_CARD, PLAY_CARD or RELEASE
     
     # APPS
-    apps = [App(input()) for _ in range(int(input()))]
+    apps = [App(input().split()) for _ in range(int(input()))]
 
     # PLAYERS
     me = Player(input())

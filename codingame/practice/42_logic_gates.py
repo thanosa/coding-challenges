@@ -1,3 +1,9 @@
+'''
+
+https://www.codingame.com/training/easy/logic-gates
+
+'''
+
 import numpy as np
 
 def calc(_type: str, input_1: np.ndarray, input_2: np.ndarray) -> np.ndarray:

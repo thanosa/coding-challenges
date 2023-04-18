@@ -16,8 +16,7 @@ def add_tuples(t1: tuple, t2: tuple) -> tuple:
     return tuple(map(sum, zip(t1, t2)))
 
 
-def move(me, direction, obstacles) -> tuple:
-
+def get_preview(me, direction) -> tuple:
     deltas = {
         0: (-1, 0),
         1: (0, +1),
@@ -25,15 +24,15 @@ def move(me, direction, obstacles) -> tuple:
         3: (0, -1),
     }
 
-    while True:
-        # Move me by delta depending on the direction
-        new = add_tuples(me, deltas[direction])
+    return add_tuples(me, deltas[direction])
 
-        # If the new location is not an obstacle
-        if new not in obstacles:
-            return new, direction
-        
-        # If an obstacle found then turn right
+
+def fix_direction(me: tuple, direction: int, obstacles: list) -> int:
+    # If the preview is ok return the direction else turn right
+    while True:
+        if get_preview(me, direction) not in obstacles:
+            return direction
+
         direction = (direction + 1) % 4
 
 
@@ -49,7 +48,8 @@ obstacles = []
 # Read the game inpts
 w, h = [int(i) for i in input().split()]
 steps = int(input())
-debug(f"Steps: {steps}")
+
+debug("map: ")
 for i in range(h):
     line = input()
     debug(line)
@@ -63,33 +63,57 @@ for i in range(h):
         else:
             raise ValueError(char)
 
-debug(f"me: {me}")
-debug(f"direction: {direction}")
+debug(f"")
+debug(f"Initial state:")
+debug(f"me: ({me} {direction})")
 debug(f"obstacles: {obstacles}")
+debug(f"steps: {steps}")
+debug(f"")
 
-# Move
+# Initialization
 final = (-1, -1)
 seen = []
+
 for i in range(steps):
-    me, direction = move(me, direction, obstacles)
+
+    # Fix the direction
+    direction = fix_direction(me, direction, obstacles)
+
+    # Check the position is never seen
     if (me, direction) not in seen:
-        debug(f"me {me} d {direction}  not  in: {seen}")
         seen.append((me, direction))
-    else:
-        
-        loop_length = len(seen)
-        reminder = steps % loop_length
-        debug(f"seen: {seen}")
-        seen.insert(0, seen.pop())
-        debug(f"seen: {seen}")
-        final = seen[reminder][0]
+        me = get_preview(me, direction)
+        continue
 
-        debug(f"me {me} d {direction} FOUND in: {seen}")
-        debug(f"loop_length: {loop_length}")
-        debug(f"steps: {steps}")
-        debug(f"reminder: {reminder}")
-        debug(f"final: {final}")
-        break
+    debug(f"Loop has been detected at:({me} {direction})")
+    debug(f"Squares already seen: {seen}")
 
+    # Locate the loop
+    start = 0
+    for l, e in enumerate(seen):
+        if e == (me, direction):
+            start = l
+            break
+    loop = seen[start:]
+
+    debug(f"The loop starts at: {i}")
+    debug(f"The loop has length: {len(loop)}")
+    debug(f"The loop is: {loop}")
+
+    remaining_steps = steps - i
+    reminder = remaining_steps % len(loop)
+
+    debug(f"The total remaining steps are: {remaining_steps}")
+    debug(f"The remaining steps after removing the loops are: {reminder}")
+    debug(f"")
+
+    final = loop[reminder][0]
+    debug(f"The final square is: {final}")
+    break
+
+else:
+    debug("No loop has been detected")
+    final = me
+    debug(f"The final square is: {final}")
 
 print(f"{final[1]} {final[0]}")

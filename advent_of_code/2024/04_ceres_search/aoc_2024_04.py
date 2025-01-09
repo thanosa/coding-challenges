@@ -32,24 +32,17 @@ for i in range(n):
 
 print(f"Part 1: {ans}")
 
-dd = [
-    (-1, -1),
-    (-1, 1),
-    (1, -1),
-    (1, 1)
-]
-
 ans = 0
 for i in range(1, n-1):
     for j in range(1, m-1):
         if lines[i][j] == "A":
-            neighbors = []
-            for d in dd:
-                ii, jj = d
-                neighbors.append(lines[i + ii][j + jj])
-
-            if neighbors.count('M') == neighbors.count('S') == 2:
-                if neighbors[0] != neighbors[2]:
-                    ans += 1
+            neighbors = [
+                lines[i + 1][j + 1],
+                lines[i - 1][j - 1],
+                lines[i + 1][j - 1],
+                lines[i - 1][j + 1],
+            ]
+            if f"{neighbors[0]}{neighbors[1]}" in ["MS", "SM"] and f"{neighbors[2]}{neighbors[3]}" in ["MS", "SM"]:
+                ans += 1
         
 print(f"Part 2: {ans}")

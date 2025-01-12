@@ -1,5 +1,4 @@
 from tqdm import tqdm
-import copy
 
 INPUT_FILE = __file__.replace('_p1.py', '.py').replace('_p2.py', '.py').replace('.py', '.dat')
 
@@ -33,45 +32,55 @@ def move_forward(direction, dd, position, world):
         return None  # Out of bounds
     return (nx, ny)
 
-def is_move_out_of_bounds(position: int, world) -> bool:
-    return position[0] < 0 or position[0] >= len(world) or position[1] < 0 or position[1] >= len(world[0])
-
 dd = {
-    0: (-1, 0),
-    1: (0, 1),
-    2: (1, 0),
-    3: (0, -1)
+    0: (-1, 0),  # Up
+    1: (0, 1),   # Right
+    2: (1, 0),   # Down
+    3: (0, -1)   # Left
 }
 
+# Get the initial guard position
 original_position = read_position("^", world)
 creates_loop = 0
 
+# Iterate through each cell to check for possible obstruction placements
 for i in tqdm(range(len(world))):
-    print("Checking row", i)
     for j in range(len(world[0])):
         if (i, j) == original_position:
             continue
         
-        new_world = world[:]
-        new_world[i] = new_world[i][:j] + "#" + new_world[i][j + 1:]
-
-        direction = 0
+        # Modify the world temporarily by placing an obstruction
+        new_world = [list(line) for line in world]  # Convert to list of lists for mutability
+        new_world[i][j] = "#"
+        new_world = ["".join(line) for line in new_world]  # Convert back to list of strings
+        
+        direction = 0  # Initial direction (Up)
         position = original_position
-
         visited = set()
+        loop_detected = set()  # Track visited cycles with direction
         finished = False
+        
         while not finished:
-            if has_obstacle(direction, position, new_world):
-                direction = rotate_right(direction)
+            # Print out the current position and direction for debugging
+            print(f"Visiting position {position} with direction {direction}")
 
+            if has_obstacle(direction, position, new_world):
+                direction = rotate_right(direction)  # Turn right if obstacle encountered
+            
             next_position = move_forward(direction, dd, position, new_world)
+
             if next_position is None:
-                finished = True
+                finished = True  # Out of bounds, stop the simulation
             elif (next_position, direction) in visited:
-                creates_loop += 1
+                # Avoid redundant loop detections if cycle is already marked
+                if (next_position, direction) not in loop_detected:
+                    loop_detected.add((next_position, direction))
+                    print(f"Loop detected at {next_position} with direction {direction}")
+                    creates_loop += 1  # Loop detected
                 finished = True
             else:
-                visited.add((next_position, direction))
-                position = next_position 
+                visited.add((next_position, direction))  # Mark position and direction as visited
+                position = next_position
+        exit()
 
-print(creates_loop)
+print(f"Total loops created: {creates_loop}")

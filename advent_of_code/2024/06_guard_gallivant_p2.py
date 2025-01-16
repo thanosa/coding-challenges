@@ -44,6 +44,7 @@ creates_loop = 0
 
 for i in tqdm(range(len(world))):
     for j in range(len(world[0])):
+        # Skip if the position is the original position or if it is an obstacle.
         if (i, j) == original_position or world[i][j] == "#":
             continue
         
@@ -54,9 +55,8 @@ for i in tqdm(range(len(world))):
         direction = 0
         position = original_position
         visited = set()
-        loop_detected = set()
         finished = False
-        
+       
         while not finished:
             if has_obstacle(direction, position, new_world):
                 direction = rotate_right(direction)
@@ -66,9 +66,7 @@ for i in tqdm(range(len(world))):
             if next_position is None:
                 finished = True
             elif (next_position, direction) in visited:
-                if (next_position, direction) not in loop_detected:
-                    loop_detected.add((next_position, direction))
-                    creates_loop += 1
+                creates_loop += 1
                 finished = True
             else:
                 visited.add((next_position, direction))
